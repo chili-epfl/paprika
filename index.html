@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .hidden {
+            display:none;
+        }
+    </style>
+</head>
+
+<body> 
+    <video id="inputVideo" autoplay class="hidden" width="640" height="480"></video>
+    <canvas id="videoCanvas" class="hidden" width="640" height="480"></canvas>
+    <div id="fps"> </div>
+
+    <script src="js/chilitags.js"></script>
+    <script src="js/three.min.js"></script>
+    <script src="js/paprika.js"></script>
+    <script>
+        var fpsText = document.createTextNode('');
+        document.getElementById('fps').appendChild(fpsText);
+
+        var start = new Date();
+        onTagUpdate(function(objects) {
+            var end = new Date();
+
+            var str = 'Objects: ';
+            for(var obj in objects){
+                str += obj + "(" +objects[obj][3]+ ")" + " ";
+            }
+            fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+            start = end;
+        });
+
+        onRotate(function (e) {alert("rotation:" + e.delta)}, "tag_0", 45);
+
+        onOrient(function (e) {alert("orientation: " + (e.hasEntered?""+ e.orientation:"not 45"))}, "tag_0", 45);
+
+    </script>
+</body>
+</html>
