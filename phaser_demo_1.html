@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		.hidden {
+			display:none;
+		}
+		canvas {
+		float: left;
+		width: 640px;
+		height: 480px;
+		}
+	</style>
+</head>
+
+<body> 
+    <h1>Phaser rotation demo</h1>
+    
+	<div id="fps"></div>
+	
+    <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
+    <canvas id="videoCanvas" width="640" height="480"></canvas>
+
+    <script src="js/chilitags.js"></script>
+	<script src="js/three.min.js"></script>
+    <script src="js/paprika.js"></script>
+	
+	<script src="js/phaser.min.js"></script>
+	
+<script>
+// Phaser variables
+var game, cursors, square;
+
+// chilitags variables
+var fpsText, start;
+var tagName = "tag_1"; // one way
+//var tagName = "tag_2"; // two way
+    
+
+    
+// chilitags info
+fpsText = document.createTextNode('');
+document.getElementById('fps').appendChild(fpsText);
+
+start = new Date();
+
+onTagUpdate(function(objects) {
+    var end = new Date();
+
+    var str = 'Objects: ';
+    for(var obj in objects){
+        str += obj + "(" +objects[obj][3]+ ")" + " ";
+    }
+    fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+    start = end;
+});
+
+// paprika events
+onOrient(inputRotate, tagName, 0, 20);
+onOrient(inputRotate, tagName, 90, 20);
+onOrient(inputRotate, tagName, 180, 20);
+onOrient(inputRotate, tagName, 270, 20);
+
+// phaser
+game = new Phaser.Game(640,480,Phaser.CANVAS,"",{preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+
+function inputRotate(e) {
+	console.log(e.orientation);
+	// orient sprite as detected tag (0+ = up)
+	square.rotation = Math.round(e.orientation / 90) * 0.5 * Math.PI;
+}
+
+function onGameUpdate() {
+	// rotation logic
+	if(cursors.left.isDown)
+		square.rotation = Math.PI;
+	if(cursors.up.isDown)
+		square.rotation = 0.5 * Math.PI;
+	if(cursors.right.isDown)
+		square.rotation = 0;
+	if(cursors.down.isDown)
+		square.rotation = 1.5 * Math.PI ;
+}
+
+function onGamePreload() {
+	game.stage.backgroundColor = '#007236';
+	game.load.image("traffic", "img/traffic.png");
+}
+
+function onGameCreate() {
+	cursors = game.input.keyboard.createCursorKeys();
+
+	square = game.add.sprite(game.width/2, game.height/2,"traffic");		
+	square.anchor.setTo(0.5,0.5);
+}
+
+function onGameRender() {
+    game.debug.renderCameraInfo(game.camera, 32, 32);
+}
+</script>
+</body>
+</html>
