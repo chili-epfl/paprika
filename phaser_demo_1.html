@@ -7,10 +7,15 @@
 			display:none;
 		}
 		canvas {
-		float: left;
-		width: 640px;
-		height: 480px;
-		}
+            float: left;
+        }
+        #gameFrame {
+            float: left;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+        }
 	</style>
 </head>
 
@@ -21,6 +26,7 @@
 	
     <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
     <canvas id="videoCanvas" width="640" height="480"></canvas>
+    <div id="gameFrame"></div>
 
     <script src="js/chilitags.js"></script>
 	<script src="js/three.min.js"></script>
@@ -30,73 +36,172 @@
 	
 <script>
 // Phaser variables
-var game, cursors, square;
+var game, cursors;
+var trafficLight1way, trafficLight, lanes, statusUp, statusDown, statusLeft, statusRight;
+var is2way = false;     // defines type of traffic light
+var orientation = 0;    // angle of control tag
+
+game = new Phaser.Game(640,480,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
 // chilitags variables
 var fpsText, start;
-var tagName = "tag_1"; // one way
-//var tagName = "tag_2"; // two way
+var tag1way = "tag_1"; // one way
+var tag2way = "tag_2"; // two way
     
+function initPaprikaEvents() {
+    // chilitags info
+    fpsText = document.createTextNode('');
+    document.getElementById('fps').appendChild(fpsText);
 
-    
-// chilitags info
-fpsText = document.createTextNode('');
-document.getElementById('fps').appendChild(fpsText);
+    start = new Date();
 
-start = new Date();
+    onTagUpdate(function(objects) {
+        var end = new Date();
 
-onTagUpdate(function(objects) {
-    var end = new Date();
+        var str = 'Objects: ';
+        for(var obj in objects){
+            str += obj + "(" +objects[obj][3]+ ")" + " ";
+        }
+        fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+        start = end;
+    });
 
-    var str = 'Objects: ';
-    for(var obj in objects){
-        str += obj + "(" +objects[obj][3]+ ")" + " ";
-    }
-    fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
-    start = end;
-});
+    // detect type of traffic light
+    onAppear(setTrafficLight1way, tag1way);
+    onAppear(setTrafficLight2way, tag2way);
 
-// paprika events
-onOrient(inputRotate, tagName, 0, 20);
-onOrient(inputRotate, tagName, 90, 20);
-onOrient(inputRotate, tagName, 180, 20);
-onOrient(inputRotate, tagName, 270, 20);
+    // detect change in tag orientation
+    onOrient(inputRotate, tag1way, 0, 20);
+    onOrient(inputRotate, tag1way, 90, 20);
+    onOrient(inputRotate, tag1way, 180, 20);
+    onOrient(inputRotate, tag1way, 270, 20);
 
-// phaser
-game = new Phaser.Game(640,480,Phaser.CANVAS,"",{preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
-
-function inputRotate(e) {
-	console.log(e.orientation);
-	// orient sprite as detected tag (0+ = up)
-	square.rotation = Math.round(e.orientation / 90) * 0.5 * Math.PI;
-}
-
-function onGameUpdate() {
-	// rotation logic
-	if(cursors.left.isDown)
-		square.rotation = Math.PI;
-	if(cursors.up.isDown)
-		square.rotation = 0.5 * Math.PI;
-	if(cursors.right.isDown)
-		square.rotation = 0;
-	if(cursors.down.isDown)
-		square.rotation = 1.5 * Math.PI ;
+    onOrient(inputRotate, tag2way, 0, 20);
+    onOrient(inputRotate, tag2way, 90, 20);
+    onOrient(inputRotate, tag2way, 180, 20);
+    onOrient(inputRotate, tag2way, 270, 20);
 }
 
 function onGamePreload() {
-	game.stage.backgroundColor = '#007236';
-	game.load.image("traffic", "img/traffic.png");
+    // loading assets
+	game.stage.backgroundColor = '#00FF00';
+    
+    game.load.image("background", "img/crossroad.png");
+	game.load.spritesheet("trafficLight", "img/trafficLight.png", 120, 120);
+    game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
 }
 
 function onGameCreate() {
+    // keyboard input
 	cursors = game.input.keyboard.createCursorKeys();
+    
+    var bg = game.add.sprite(0,0, "background");
+    //bg.scale = 2;
 
-	square = game.add.sprite(game.width/2, game.height/2,"traffic");		
-	square.anchor.setTo(0.5,0.5);
+	trafficLight = game.add.sprite(game.width/2, game.height/2,"trafficLight");
+    trafficLight.animations.add("1way", [0], false);
+    trafficLight.animations.add("2way", [1], false);
+	//trafficLight.scale = 2;
+    trafficLight.anchor.setTo(0.5,0.5);
+    
+    lanes = game.add.group();
+    
+    statusUp    = lanes.create(240, 84, "lightStatus"); // going down
+    statusUp.angle = 270;
+    statusLeft  = lanes.create(164, 320, "lightStatus"); // going right
+    statusLeft.angle = 180;
+    statusDown  = lanes.create(400, 396, "lightStatus"); // going up
+    statusDown.angle = 90;
+    statusRight = lanes.create(476, 160, "lightStatus"); // going left
+    //statusRight.angle = 0;
+    
+    lanes.callAll('anchor.setTo', 'anchor', 0.5,0.5);
+    lanes.callAll('animations.add', 'animations', "isGreen", [0], false);
+    lanes.callAll('animations.add', 'animations', "isRed", [1], false);
+    
+    initPaprikaEvents();
 }
 
 function onGameRender() {
+    // phaser debug information
     game.debug.renderCameraInfo(game.camera, 32, 32);
+}
+    
+// game logic
+function inputRotate(e) {
+	console.log(e.goalOrientation);
+	
+    // log current tag orientation
+	orientation = e.goalOrientation;
+}
+
+function setTrafficLight1way() {
+    trafficLight.animations.play("1way");
+    is2way = false;
+}
+
+function setTrafficLight2way() {
+    trafficLight.animations.play("2way");
+    is2way = true;
+}
+
+function onGameUpdate() {
+     // !! PHASER ROTATION IS CLOCKWHISE !!
+    
+	if(cursors.left.isDown)
+		orientation = 90;
+	if(cursors.up.isDown)
+		orientation = 0;
+	if(cursors.right.isDown)
+		orientation = 270;
+	if(cursors.down.isDown)
+		orientation = 180;
+    
+    if(is2way){
+        // 2 way traffic
+        switch(orientation){
+            case 0:
+            case 180:
+                statusUp.animations.play("isGreen");
+                statusDown.animations.play("isGreen");
+                statusLeft.animations.play("isRed");
+                statusRight.animations.play("isRed");
+                break;
+            case 90:
+            case 270:
+                statusUp.animations.play("isRed");
+                statusDown.animations.play("isRed");
+                statusLeft.animations.play("isGreen");
+                statusRight.animations.play("isGreen");
+                break;
+        }
+    } else {
+        // 1 way traffic
+        var activeLane;
+        switch(orientation){
+            case 0:
+                activeLane = statusUp;
+                break;
+            case 180:
+                activeLane = statusDown;
+                break;
+            case 90:
+                activeLane = statusRight;
+                break;
+            case 270:
+                activeLane = statusLeft;
+                break;
+        }
+        
+        activeLane.animations.play("isGreen");
+        
+        lanes.forEach(function(lane) {
+            if(lane != activeLane) lane.animations.play("isRed");
+        });
+    }
+            
+    trafficLight.angle = orientation;
+    
 }
 </script>
 </body>
