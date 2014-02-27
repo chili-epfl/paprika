@@ -192,12 +192,14 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
         if (   !isIn && delta < epsilon
             ||  isIn && delta > epsilon) {
             isIn = !isIn;
-            if (isIn) triggeringOrientation = orientation;
-            callback({
-                transformation:transformation,
-                orientation:orientation,
-                goalOrientation:goalOrientation,
-                hasEntered:isIn});
+            if (isIn) {
+                triggeringOrientation = orientation;
+                callback({
+                    transformation:transformation,
+                    orientation:orientation,
+                    goalOrientation:goalOrientation,
+                    hasEntered:isIn});
+            }
         }
     };
 
