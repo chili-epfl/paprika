@@ -20,7 +20,10 @@
 </head>
 
 <body> 
-    <h1>Phaser rotation demo</h1>
+    <h1>Phaser Rotation Demo</h1>
+    <h2>Crossroads Traffic Management</h2>
+    <p>Control the active lane at the crossroads with a paper card (tag #1).
+        Don't let the cars crash!</p>
     
 	<div id="fps"></div>
 	
@@ -37,16 +40,20 @@
 <script>
 // Phaser variables
 var game, cursors;
-var trafficLight1way, trafficLight, lanes, statusUp, statusDown, statusLeft, statusRight;
-var is2way = false;     // defines type of traffic light
+var trafficLight;
+var lanes, statusUp, statusDown, statusLeft, statusRight;
+var cars, activeLane;
+    
 var orientation = 0;    // angle of control tag
+var updateLanes = false;
+var carSpeed = 100;
 
 game = new Phaser.Game(640,480,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
 // chilitags variables
 var fpsText, start;
-var tag1way = "tag_1"; // one way
-var tag2way = "tag_2"; // two way
+var tagTrafficLight = "tag_1";
+var tagReset = "tag_2";
     
 function initPaprikaEvents() {
     // chilitags info
@@ -66,20 +73,14 @@ function initPaprikaEvents() {
         start = end;
     });
 
-    // detect type of traffic light
-    onAppear(setTrafficLight1way, tag1way);
-    onAppear(setTrafficLight2way, tag2way);
-
     // detect change in tag orientation
-    onOrient(inputRotate, tag1way, 0, 20);
-    onOrient(inputRotate, tag1way, 90, 20);
-    onOrient(inputRotate, tag1way, 180, 20);
-    onOrient(inputRotate, tag1way, 270, 20);
-
-    onOrient(inputRotate, tag2way, 0, 20);
-    onOrient(inputRotate, tag2way, 90, 20);
-    onOrient(inputRotate, tag2way, 180, 20);
-    onOrient(inputRotate, tag2way, 270, 20);
+    onOrient(inputRotate, tagTrafficLight, 0, 20);
+    onOrient(inputRotate, tagTrafficLight, 90, 20);
+    onOrient(inputRotate, tagTrafficLight, 180, 20);
+    onOrient(inputRotate, tagTrafficLight, 270, 20);
+    
+    // restart game
+    onAppear(resetGame, tagReset);
 }
 
 function onGamePreload() {
@@ -87,8 +88,9 @@ function onGamePreload() {
 	game.stage.backgroundColor = '#00FF00';
     
     game.load.image("background", "img/crossroad.png");
-	game.load.spritesheet("trafficLight", "img/trafficLight.png", 120, 120);
+	game.load.image("trafficLight", "img/trafficLight.png");
     game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
+    game.load.spritesheet("car", "img/car.png", 44, 100);
 }
 
 function onGameCreate() {
@@ -96,12 +98,8 @@ function onGameCreate() {
 	cursors = game.input.keyboard.createCursorKeys();
     
     var bg = game.add.sprite(0,0, "background");
-    //bg.scale = 2;
 
 	trafficLight = game.add.sprite(game.width/2, game.height/2,"trafficLight");
-    trafficLight.animations.add("1way", [0], false);
-    trafficLight.animations.add("2way", [1], false);
-	//trafficLight.scale = 2;
     trafficLight.anchor.setTo(0.5,0.5);
     
     lanes = game.add.group();
@@ -119,89 +117,169 @@ function onGameCreate() {
     lanes.callAll('animations.add', 'animations', "isGreen", [0], false);
     lanes.callAll('animations.add', 'animations', "isRed", [1], false);
     
+    cars = game.add.group();
+    initCars();
+    
     initPaprikaEvents();
+}
+
+function resetGame() {
+    cars.destroy();
+    cars = game.add.group();
+    initCars();
+    
+    lanes.callAll('animations.play', 'animations', "isRed");
+    activeLane = undefined;
+    updateLanes = false;
 }
 
 function onGameRender() {
     // phaser debug information
+    // only visible when game is run with Phaser.CANVAS
     game.debug.renderCameraInfo(game.camera, 32, 32);
+    cars.forEach(function(car) { game.debug.renderSpriteBody(car); }); // display cars bounding box
+
 }
     
 // game logic
 function inputRotate(e) {
 	console.log(e.goalOrientation);
-	
-    // log current tag orientation
+    
 	orientation = e.goalOrientation;
+    updateLanes = true;
+}
+    
+function initCars() {
+    newCar(270, 0, 0, statusUp);
+    newCar(270, -120, 0, statusUp);
+    newCar(270, -240, 0, statusUp);
+    newCar(370, 480, 180, statusDown);
+    newCar(370, 600, 180, statusDown);
+    newCar(370, 720, 180, statusDown);
+    newCar(50, 290, 270, statusLeft);
+    newCar(-70, 290, 270, statusLeft);
+    newCar(-190, 290, 270, statusLeft);
+    newCar(590, 190, 90, statusRight);
+    newCar(710, 190, 90, statusRight);
+    newCar(830, 190, 90, statusRight);
 }
 
-function setTrafficLight1way() {
-    trafficLight.animations.play("1way");
-    is2way = false;
+function newCar(x, y, a, l) {
+    var car = cars.create(x, y, "car");
+    car.anchor.setTo(0.5, 0.5);
+    car.angle = a;
+    
+    car.lane = l;
+    car.active = true; // if still within lane and uncrashed
+    
+    // bounding box and crash physics
+    car.body.translate(-car.width/2, -car.height/2);
+    car.body.polygon.rotate(car.rotation);
+    car.body.translate(car.width/2, car.height/2);
+    car.body.bounce.setTo(0.9,0.9);
+    
+    car.events.onOutOfBounds.add(killCar, this);
+    
+    car.animations.add("ok", [0], false);
+    car.animations.add("crashed", [1], false);
+    car.animations.play("ok");
+}
+    
+function crashCars(c1, c2) {
+    c1.animations.play("crashed");
+    c2.animations.play("crashed");
+    
+    c1.active = false;
+    c2.active = false;
+}
+    
+function killCar(car) {
+    if(!car.active) car.kill();
 }
 
-function setTrafficLight2way() {
-    trafficLight.animations.play("2way");
-    is2way = true;
+function updateCarSpeeds() {
+    cars.forEach(function(car) {
+        if(car.active){
+            if (car.lane == activeLane) {
+                switch(activeLane){
+                    case statusUp:
+                        car.body.velocity.y = carSpeed;
+                        break;
+                    case statusDown:
+                        car.body.velocity.y = -carSpeed;
+                        break;
+                    case statusRight:
+                        car.body.velocity.x = -carSpeed;
+                        break;
+                    case statusLeft:
+                        car.body.velocity.x = carSpeed;
+                        break;
+                }
+            } else {
+                 car.body.velocity.x = 0;
+                 car.body.velocity.y = 0;
+            }
+        }
+    });
 }
-
+    
+function updateLane(newLane) {
+    if(activeLane != undefined) activeLane.animations.play("isRed");
+    newLane.animations.play("isGreen");
+    
+    activeLane = newLane;
+    updateLanes = false;
+}
+    
 function onGameUpdate() {
-     // !! PHASER ROTATION IS CLOCKWHISE !!
+    // keyboard input
+	if(cursors.left.isDown)  { orientation =  90; updateLanes = true; }
+	if(cursors.up.isDown)    { orientation = 180; updateLanes = true; }
+	if(cursors.right.isDown) { orientation = 270; updateLanes = true; }
+    if(cursors.down.isDown)  { orientation =   0; updateLanes = true; }
     
-	if(cursors.left.isDown)
-		orientation = 90;
-	if(cursors.up.isDown)
-		orientation = 0;
-	if(cursors.right.isDown)
-		orientation = 270;
-	if(cursors.down.isDown)
-		orientation = 180;
-    
-    if(is2way){
-        // 2 way traffic
-        switch(orientation){
-            case 0:
-            case 180:
-                statusUp.animations.play("isGreen");
-                statusDown.animations.play("isGreen");
-                statusLeft.animations.play("isRed");
-                statusRight.animations.play("isRed");
+    // check for no longer active cars    
+    cars.forEach(function(car) {
+        switch(car.lane){
+            case statusUp:
+                if(car.y > statusUp.y) car.active = false;
                 break;
-            case 90:
-            case 270:
-                statusUp.animations.play("isRed");
-                statusDown.animations.play("isRed");
-                statusLeft.animations.play("isGreen");
-                statusRight.animations.play("isGreen");
+            case statusDown:
+                if(car.y < statusDown.y) car.active = false;
+                break;
+            case statusRight:
+                if(car.x < statusRight.x) car.active = false;
+                break;
+            case statusLeft:
+                if(car.x > statusLeft.x) car.active = false;
                 break;
         }
-    } else {
-        // 1 way traffic
-        var activeLane;
+    });
+    
+    // update lanes when required
+    if(updateLanes) {
+        var newLane;
         switch(orientation){
             case 0:
-                activeLane = statusUp;
+                newLane = statusUp;
                 break;
             case 180:
-                activeLane = statusDown;
+                newLane = statusDown;
                 break;
             case 90:
-                activeLane = statusRight;
+                newLane = statusRight;
                 break;
             case 270:
-                activeLane = statusLeft;
+                newLane = statusLeft;
                 break;
         }
         
-        activeLane.animations.play("isGreen");
-        
-        lanes.forEach(function(lane) {
-            if(lane != activeLane) lane.animations.play("isRed");
-        });
+        trafficLight.angle = orientation;
+        updateLane(newLane);
+        updateCarSpeeds();
     }
-            
-    trafficLight.angle = orientation;
     
+    game.physics.collide(cars, cars, crashCars);
 }
 </script>
 </body>
