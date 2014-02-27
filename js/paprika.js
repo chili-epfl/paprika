@@ -111,7 +111,7 @@ var onDisappear = function(callback, objectName) {
 }
 
 // registers a `callback` function to call when `objectName` has been rotated
-// by at least `minDelta` degrees
+// by at least `minDelta` radians
 var onRotate = function(callback, objectName, minDelta) {
 
     // stores the initial orientation to compare against
@@ -135,10 +135,10 @@ var onRotate = function(callback, objectName, minDelta) {
         if (previousOrientation === undefined) previousOrientation = orientation;
 
         // computing the rotation since `previousOrientation`,
-        // and normalizing in ]-180, 180]
-        var delta = THREE.Math.radToDeg(orientation-previousOrientation);
-        if (delta > 180) delta = 360-delta;
-        if (delta <= -180) delta = 360-delta;
+        // and normalizing in ]-Math.PI, Math.PI]
+        var delta = orientation-previousOrientation;
+        if (delta > Math.PI) delta = 2*Math.PI-delta;
+        if (delta <= -Math.PI) delta = 2*Math.PI-delta;
 
         // if the rotation is beyond the minDelta threshold, call the callback
         // and reset the reference orientation (previousOrientation)
@@ -157,12 +157,12 @@ var onRotate = function(callback, objectName, minDelta) {
 };
 
 // registers a `callback` function to call when `objectName` is within +/-
-// `epsilon` degrees from `goalOrientation`, and when the orientation of
-// `objectName` changes again by at least `epsilon` degrees. Note that this
+// `epsilon` radians from `goalOrientation`, and when the orientation of
+// `objectName` changes again by at least `epsilon` radians. Note that this
 // sets a different threshold to avoid problematic border cases.
-// The default value for epsilon is 5 degrees.
+// The default value for epsilon is 0.025 * Math.PI (9 degrees.)
 var onOrient = function(callback, objectName, goalOrientation, epsilon) {
-    epsilon = typeof epsilon !== 'undefined' ? epsilon : 5;
+    epsilon = typeof epsilon !== 'undefined' ? epsilon : 0.025 * Math.PI;
 
     // keeps track of whether the orientation of the object is already within
     // the target orientation range
@@ -181,10 +181,13 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
         // ... but this time we compare the current orientation with the target
         // one if the object is not yet oriented as expected, or with the
         // orientation it had when it was deemed close enough form the target
-        var orientation = THREE.Math.radToDeg(euler.z);
+        var orientation = euler.z;
         var delta = Math.abs(
             (isIn?triggeringOrientation:goalOrientation)-orientation);
-        if (delta > 180) delta = 360-delta;
+        
+        while (delta < 0) delta += 2*Math.PI;
+        while (delta >= 2*Math.PI) delta -= 2*Math.PI;
+        if (delta > Math.PI) delta = 2*Math.PI-delta;
 
         // if the object is oriented as expected but wasn't before, or vice
         // versa, we switch the state storing whether the goal is reached, and

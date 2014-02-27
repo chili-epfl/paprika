@@ -44,7 +44,7 @@ var trafficLight;
 var lanes, statusUp, statusDown, statusLeft, statusRight;
 var cars, activeLane;
     
-var orientation = 0;    // angle of control tag
+var orientation = 0;    // angle of control tag in radians
 var updateLanes = false;
 var carSpeed = 100;
 
@@ -74,10 +74,10 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    onOrient(inputRotate, tagTrafficLight, 0, 20);
-    onOrient(inputRotate, tagTrafficLight, 90, 20);
-    onOrient(inputRotate, tagTrafficLight, 180, 20);
-    onOrient(inputRotate, tagTrafficLight, 270, 20);
+    onOrient(inputRotate, tagTrafficLight,           0, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLight, 0.5*Math.PI, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLight,     Math.PI, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLight, 1.5*Math.PI, 0.1*Math.PI);
     
     // restart game
     onAppear(resetGame, tagReset);
@@ -105,13 +105,13 @@ function onGameCreate() {
     lanes = game.add.group();
     
     statusUp    = lanes.create(240, 84, "lightStatus"); // going down
-    statusUp.angle = 270;
+    statusUp.rotation = 1.5*Math.PI;
     statusLeft  = lanes.create(164, 320, "lightStatus"); // going right
-    statusLeft.angle = 180;
+    statusLeft.rotation = Math.PI;
     statusDown  = lanes.create(400, 396, "lightStatus"); // going up
-    statusDown.angle = 90;
+    statusDown.rotation = 0.5*Math.PI;
     statusRight = lanes.create(476, 160, "lightStatus"); // going left
-    //statusRight.angle = 0;
+    //statusRight.rotation = 0;
     
     lanes.callAll('anchor.setTo', 'anchor', 0.5,0.5);
     lanes.callAll('animations.add', 'animations', "isGreen", [0], false);
@@ -143,7 +143,7 @@ function onGameRender() {
     
 // game logic
 function inputRotate(e) {
-	console.log(e.goalOrientation);
+	console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
     
 	orientation = e.goalOrientation;
     updateLanes = true;
@@ -153,21 +153,21 @@ function initCars() {
     newCar(270, 0, 0, statusUp);
     newCar(270, -120, 0, statusUp);
     newCar(270, -240, 0, statusUp);
-    newCar(370, 480, 180, statusDown);
-    newCar(370, 600, 180, statusDown);
-    newCar(370, 720, 180, statusDown);
-    newCar(50, 290, 270, statusLeft);
-    newCar(-70, 290, 270, statusLeft);
-    newCar(-190, 290, 270, statusLeft);
-    newCar(590, 190, 90, statusRight);
-    newCar(710, 190, 90, statusRight);
-    newCar(830, 190, 90, statusRight);
+    newCar(370, 480, Math.PI, statusDown);
+    newCar(370, 600, Math.PI, statusDown);
+    newCar(370, 720, Math.PI, statusDown);
+    newCar(50, 290, 1.5*Math.PI, statusLeft);
+    newCar(-70, 290, 1.5*Math.PI, statusLeft);
+    newCar(-190, 290, 1.5*Math.PI, statusLeft);
+    newCar(590, 190, 0.5*Math.PI, statusRight);
+    newCar(710, 190, 0.5*Math.PI, statusRight);
+    newCar(830, 190, 0.5*Math.PI, statusRight);
 }
 
-function newCar(x, y, a, l) {
+function newCar(x, y, r, l) {
     var car = cars.create(x, y, "car");
     car.anchor.setTo(0.5, 0.5);
-    car.angle = a;
+    car.rotation = r;
     
     car.lane = l;
     car.active = true; // if still within lane and uncrashed
@@ -233,10 +233,10 @@ function updateLane(newLane) {
     
 function onGameUpdate() {
     // keyboard input
-	if(cursors.left.isDown)  { orientation =  90; updateLanes = true; }
-	if(cursors.up.isDown)    { orientation = 180; updateLanes = true; }
-	if(cursors.right.isDown) { orientation = 270; updateLanes = true; }
-    if(cursors.down.isDown)  { orientation =   0; updateLanes = true; }
+	if(cursors.left.isDown)  { orientation = 0.5*Math.PI; updateLanes = true; }
+	if(cursors.up.isDown)    { orientation =     Math.PI; updateLanes = true; }
+	if(cursors.right.isDown) { orientation = 1.5*Math.PI; updateLanes = true; }
+    if(cursors.down.isDown)  { orientation =           0; updateLanes = true; }
     
     // check for no longer active cars    
     cars.forEach(function(car) {
@@ -263,18 +263,18 @@ function onGameUpdate() {
             case 0:
                 newLane = statusUp;
                 break;
-            case 180:
+            case Math.PI:
                 newLane = statusDown;
                 break;
-            case 90:
+            case 0.5*Math.PI:
                 newLane = statusRight;
                 break;
-            case 270:
+            case 1.5*Math.PI:
                 newLane = statusLeft;
                 break;
         }
         
-        trafficLight.angle = orientation;
+        trafficLight.rotation = orientation;
         updateLane(newLane);
         updateCarSpeeds();
     }
