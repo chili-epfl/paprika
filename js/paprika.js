@@ -68,6 +68,48 @@ var onTagUpdate = function(callback) {
     updateCallbacks.push(callback);
 };
 
+// registers a `callback`function to call when `objectName` has entered the view
+var onAppear = function(callback, objectName) {
+    
+    // defines if object was present in previous frame
+    var wasPresent = false;
+    
+    // the logic computing whether or not calling `callback`
+    var trigger = function(objects) {
+        
+        // compute current visibility
+        var isPresent = (objectName in objects);
+        // detect if entered
+        if(!wasPresent && isPresent) callback();
+        // save current visibility
+        wasPresent = isPresent;
+    };
+    
+    // we add this trigger to the list of callbacks
+    updateCallbacks.push(trigger);
+}
+
+// registers a `callback`function to call when `objectName` has exited the view
+var onDisappear = function(callback, objectName) {
+    
+    // defines if object was present in previous frame
+    var wasPresent = false;
+    
+    // the logic computing whether or not calling `callback`
+    var trigger = function(objects) {
+        
+        // compute current visibility
+        var isPresent = (objectName in objects);
+        // detect if exited
+        if(!isPresent && wasPresent) callback();
+        // save current visibility
+        wasPresent = isPresent;
+    };
+    
+    // we add this trigger to the list of callbacks
+    updateCallbacks.push(trigger);
+}
+
 // registers a `callback` function to call when `objectName` has been rotated
 // by at least `minDelta` degrees
 var onRotate = function(callback, objectName, minDelta) {
