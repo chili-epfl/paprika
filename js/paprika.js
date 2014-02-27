@@ -196,6 +196,7 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
             callback({
                 transformation:transformation,
                 orientation:orientation,
+                goalOrientation:goalOrientation,
                 hasEntered:isIn});
         }
     };
