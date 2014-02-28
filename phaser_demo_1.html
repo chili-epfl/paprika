@@ -1,0 +1,273 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		.hidden {
+			display:none;
+		}
+		canvas {
+            float: left;
+        }
+        #gameFrame {
+            float: left;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+        }
+	</style>
+</head>
+
+<body> 
+    <h1>Phaser Rotation Demo</h1>
+    <h2>Crossroads Traffic Management</h2>
+    <p>Control the active lane at the crossroads with a paper card (tag #1).
+        Don't let the cars crash!</p>
+    
+	<div id="fps"></div>
+	
+    <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
+    <canvas id="videoCanvas" width="640" height="480"></canvas>
+    <div id="gameFrame"></div>
+
+    <script src="js/chilitags.js"></script>
+	<script src="js/three.min.js"></script>
+    <script src="js/paprika.js"></script>
+	
+	<script src="js/phaser.min.js"></script>
+	
+<script>
+// Phaser variables
+var game;
+var trafficLight;
+var lanes, statusUp, statusDown, statusLeft, statusRight;
+var cars, activeLane;
+    
+var orientation = 0;    // angle of control tag in radians
+var updateLanes = false;
+var carSpeed = 100;
+
+game = new Phaser.Game(640,480,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+
+// chilitags variables
+var fpsText, start;
+var tagTrafficLight = "tag_1";
+var tagReset = "tag_2";
+    
+function initPaprikaEvents() {
+    // chilitags info
+    fpsText = document.createTextNode('');
+    document.getElementById('fps').appendChild(fpsText);
+
+    start = new Date();
+
+    onTagUpdate(function(objects) {
+        var end = new Date();
+
+        var str = 'Objects: ';
+        for(var obj in objects){
+            str += obj + "(" +objects[obj][3]+ ")" + " ";
+        }
+        fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+        start = end;
+    });
+
+    // detect change in tag orientation
+    onOrient(inputRotate, tagTrafficLight,           0, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLight, 0.5*Math.PI, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLight,     Math.PI, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLight, 1.5*Math.PI, 0.1*Math.PI);
+    
+    // restart game
+    onAppear(resetGame, tagReset);
+}
+
+function onGamePreload() {
+    // loading assets
+	game.stage.backgroundColor = '#00FF00';
+    
+    game.load.image("background", "img/crossroad.png");
+	game.load.image("trafficLight", "img/trafficLight.png");
+    game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
+    game.load.spritesheet("car", "img/car.png", 44, 100);
+}
+
+function onGameCreate() {    
+    var bg = game.add.sprite(0,0, "background");
+
+	trafficLight = game.add.sprite(game.width/2, game.height/2,"trafficLight");
+    trafficLight.anchor.setTo(0.5,0.5);
+    
+    lanes = game.add.group();
+    
+    statusUp    = lanes.create(240, 84, "lightStatus"); // going down
+    statusUp.rotation = 1.5*Math.PI;
+    statusLeft  = lanes.create(164, 320, "lightStatus"); // going right
+    statusLeft.rotation = Math.PI;
+    statusDown  = lanes.create(400, 396, "lightStatus"); // going up
+    statusDown.rotation = 0.5*Math.PI;
+    statusRight = lanes.create(476, 160, "lightStatus"); // going left
+    //statusRight.rotation = 0;
+    
+    lanes.callAll('anchor.setTo', 'anchor', 0.5,0.5);
+    lanes.callAll('animations.add', 'animations', "isGreen", [0], false);
+    lanes.callAll('animations.add', 'animations', "isRed", [1], false);
+    
+    cars = game.add.group();
+    initCars();
+    
+    initPaprikaEvents();
+}
+
+function resetGame() {
+    cars.destroy();
+    cars = game.add.group();
+    initCars();
+    
+    lanes.callAll('animations.play', 'animations', "isRed");
+    activeLane = undefined;
+    updateLanes = false;
+}
+
+function onGameRender() {
+}
+    
+// game logic
+function inputRotate(e) {
+	console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
+    
+	orientation = e.goalOrientation;
+    updateLanes = true;
+}
+    
+function initCars() {
+    newCar(270, 0, 0, statusUp);
+    newCar(270, -120, 0, statusUp);
+    newCar(270, -240, 0, statusUp);
+    newCar(370, 480, Math.PI, statusDown);
+    newCar(370, 600, Math.PI, statusDown);
+    newCar(370, 720, Math.PI, statusDown);
+    newCar(50, 290, 1.5*Math.PI, statusLeft);
+    newCar(-70, 290, 1.5*Math.PI, statusLeft);
+    newCar(-190, 290, 1.5*Math.PI, statusLeft);
+    newCar(590, 190, 0.5*Math.PI, statusRight);
+    newCar(710, 190, 0.5*Math.PI, statusRight);
+    newCar(830, 190, 0.5*Math.PI, statusRight);
+}
+
+function newCar(x, y, r, l) {
+    var car = cars.create(x, y, "car");
+    car.anchor.setTo(0.5, 0.5);
+    car.rotation = r;
+    
+    car.lane = l;
+    car.active = true; // if still within lane and uncrashed
+    
+    // bounding box and crash physics
+    car.body.translate(-car.width/2, -car.height/2);
+    car.body.polygon.rotate(car.rotation);
+    car.body.translate(car.width/2, car.height/2);
+    car.body.bounce.setTo(0.9,0.9);
+    
+    car.events.onOutOfBounds.add(killCar, this);
+    
+    car.animations.add("ok", [0], false);
+    car.animations.add("crashed", [1], false);
+    car.animations.play("ok");
+}
+    
+function crashCars(c1, c2) {
+    c1.animations.play("crashed");
+    c2.animations.play("crashed");
+    
+    c1.active = false;
+    c2.active = false;
+}
+    
+function killCar(car) {
+    if(!car.active) car.kill();
+}
+
+function updateCarSpeeds() {
+    cars.forEach(function(car) {
+        if(car.active){
+            if (car.lane == activeLane) {
+                switch(activeLane){
+                    case statusUp:
+                        car.body.velocity.y = carSpeed;
+                        break;
+                    case statusDown:
+                        car.body.velocity.y = -carSpeed;
+                        break;
+                    case statusRight:
+                        car.body.velocity.x = -carSpeed;
+                        break;
+                    case statusLeft:
+                        car.body.velocity.x = carSpeed;
+                        break;
+                }
+            } else {
+                 car.body.velocity.x = 0;
+                 car.body.velocity.y = 0;
+            }
+        }
+    });
+}
+    
+function updateLane(newLane) {
+    if(activeLane != undefined) activeLane.animations.play("isRed");
+    newLane.animations.play("isGreen");
+    
+    activeLane = newLane;
+    updateLanes = false;
+}
+    
+function onGameUpdate() {
+    
+    // check for no longer active cars    
+    cars.forEach(function(car) {
+        switch(car.lane){
+            case statusUp:
+                if(car.y > statusUp.y) car.active = false;
+                break;
+            case statusDown:
+                if(car.y < statusDown.y) car.active = false;
+                break;
+            case statusRight:
+                if(car.x < statusRight.x) car.active = false;
+                break;
+            case statusLeft:
+                if(car.x > statusLeft.x) car.active = false;
+                break;
+        }
+    });
+    
+    // update lanes when required
+    if(updateLanes) {
+        var newLane;
+        switch(orientation){
+            case 0:
+                newLane = statusUp;
+                break;
+            case Math.PI:
+                newLane = statusDown;
+                break;
+            case 0.5*Math.PI:
+                newLane = statusRight;
+                break;
+            case 1.5*Math.PI:
+                newLane = statusLeft;
+                break;
+        }
+        
+        trafficLight.rotation = orientation;
+        updateLane(newLane);
+        updateCarSpeeds();
+    }
+    
+    game.physics.collide(cars, cars, crashCars);
+}
+</script>
+</body>
+</html>
