@@ -80,7 +80,7 @@ var onAppear = function(callback, objectName) {
         // compute current visibility
         var isPresent = (objectName in objects);
         // detect if entered
-        if(!wasPresent && isPresent) callback();
+        if(!wasPresent && isPresent) callback( {objectName:objectName} );
         // save current visibility
         wasPresent = isPresent;
     };
@@ -101,7 +101,7 @@ var onDisappear = function(callback, objectName) {
         // compute current visibility
         var isPresent = (objectName in objects);
         // detect if exited
-        if(!isPresent && wasPresent) callback();
+        if(!isPresent && wasPresent) callback( {objectName:objectName} );
         // save current visibility
         wasPresent = isPresent;
     };
@@ -144,6 +144,7 @@ var onRotate = function(callback, objectName, minDelta) {
         // and reset the reference orientation (previousOrientation)
         if (Math.abs(delta) > minDelta) {
             callback({
+                objectName:objectName,
                 transformation:transformation,
                 orientation:orientation,
                 delta:delta});
@@ -198,6 +199,7 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
             if (isIn) {
                 triggeringOrientation = orientation;
                 callback({
+                    objectName:objectName,
                     transformation:transformation,
                     orientation:orientation,
                     goalOrientation:goalOrientation,
