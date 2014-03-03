@@ -1,0 +1,293 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		.hidden {
+			display:none;
+		}
+		canvas {
+            float: left;
+        }
+        #gameFrame {
+            float: left;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+        }
+	</style>
+</head>
+
+<body> 
+    <div style="float:left">
+        
+    <h1>Phaser Orientation Demo</h1>
+    <h2>Evil Crossroads Traffic Management</h2>
+    <p>Try to make the cars crash!
+    <br>Control the active lanes at the crossroads with the controller cards. (tags #3, #4, #5, #6)
+    <br>Reset the game by showing the reset card. (tag #2)</p>
+
+	<div id="fps"></div>
+    <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
+    <canvas id="videoCanvas" width="640" height="480"></canvas>
+        
+    </div>
+    
+    <div id="gameFrame"></div>
+
+    <script src="js/chilitags.js"></script>
+	<script src="js/three.min.js"></script>
+    <script src="js/paprika.js"></script>
+	
+	<script src="js/phaser.min.js"></script>
+	
+<script>
+// Phaser variables
+var game, cursors;
+var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
+var lanesNW, statusUpNW, statusDownNW, statusLeftNW, statusRightNW;
+var cars, activeLane;
+    
+var orientationNW = 0;    // angle of control tag in radians
+var updateLanes = false;
+var carSpeed = 100;
+
+game = new Phaser.Game(1200,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+
+// chilitags variables
+var fpsText, start;
+var tagTrafficLightNW = "tag_1";
+var tagReset = "tag_2";
+    
+function initPaprikaEvents() {
+    // chilitags info
+    fpsText = document.createTextNode('');
+    document.getElementById('fps').appendChild(fpsText);
+
+    start = new Date();
+
+    onTagUpdate(function(objects) {
+        var end = new Date();
+
+        var str = 'Objects: ';
+        for(var obj in objects){
+            str += obj + "(" +objects[obj][3]+ ")" + " ";
+        }
+        fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+        start = end;
+    });
+
+    // detect change in tag orientation
+    onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI);
+    onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI);
+    
+    // restart game
+    onAppear(resetGame, tagReset);
+}
+
+function onGamePreload() {
+    // loading assets
+	game.stage.backgroundColor = '#00FF00';
+    
+    game.load.image("background", "img/crossroad.png");
+	game.load.image("trafficLight", "img/trafficLight.png");
+    game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
+    game.load.spritesheet("car", "img/car.png", 44, 100);
+}
+
+function onGameCreate() {
+    // keyboard input
+	cursors = game.input.keyboard.createCursorKeys();
+    
+    game.add.sprite(  0,  0, "background");
+    game.add.sprite(560,  0, "background");
+    game.add.sprite(  0,480, "background");
+    game.add.sprite(560,480, "background");
+
+	trafficLightNW = game.add.sprite(320, 240,"trafficLight");
+    trafficLightNW.anchor.setTo(0.5,0.5);
+    
+    lanesNW = game.add.group();
+    
+    statusUpNW    = lanesNW.create(240, 84, "lightStatus"); // going down
+    statusUpNW.rotation = 1.5*Math.PI;
+    statusLeftNW  = lanesNW.create(164, 320, "lightStatus"); // going right
+    statusLeftNW.rotation = Math.PI;
+    statusDownNW  = lanesNW.create(400, 396, "lightStatus"); // going up
+    statusDownNW.rotation = 0.5*Math.PI;
+    statusRightNW = lanesNW.create(476, 160, "lightStatus"); // going left
+    
+    lanesNW.callAll('anchor.setTo', 'anchor', 0.5,0.5);
+    lanesNW.callAll('animations.add', 'animations', "isGreen", [0], false);
+    lanesNW.callAll('animations.add', 'animations', "isRed", [1], false);
+    
+    cars = game.add.group();
+    initCars();
+    
+    initPaprikaEvents();
+}
+
+function resetGame() {
+    cars.destroy();
+    cars = game.add.group();
+    initCars();
+    
+    lanesNW.callAll('animations.play', 'animations', "isRed");
+    activeLaneNW = undefined;
+    updateLanes = false;
+}
+
+function onGameRender() {
+    // phaser debug information
+    // only visible when game is run with Phaser.CANVAS
+    game.debug.renderCameraInfo(game.camera, 32, 32);
+    cars.forEach(function(car) { game.debug.renderSpriteBody(car); }); // display cars bounding box
+
+}
+    
+// game logic
+function inputRotate(e) {
+	console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
+    
+	orientationNW = e.goalOrientation;
+    updateLanes = true;
+}
+    
+function initCars() {
+    newCar(270, 0, 0, statusUpNW);
+    newCar(270, -120, 0, statusUpNW);
+    newCar(270, -240, 0, statusUpNW);
+    newCar(370, 480, Math.PI, statusDownNW);
+    newCar(370, 600, Math.PI, statusDownNW);
+    newCar(370, 720, Math.PI, statusDownNW);
+    newCar(50, 290, 1.5*Math.PI, statusLeftNW);
+    newCar(-70, 290, 1.5*Math.PI, statusLeftNW);
+    newCar(-190, 290, 1.5*Math.PI, statusLeftNW);
+    newCar(590, 190, 0.5*Math.PI, statusRightNW);
+    newCar(710, 190, 0.5*Math.PI, statusRightNW);
+    newCar(830, 190, 0.5*Math.PI, statusRightNW);
+}
+
+function newCar(x, y, r, l) {
+    var car = cars.create(x, y, "car");
+    car.anchor.setTo(0.5, 0.5);
+    car.rotation = r;
+    
+    car.lane = l;
+    car.active = true; // if still within lane and uncrashed
+    
+    // bounding box and crash physics
+    car.body.translate(-car.width/2, -car.height/2);
+    car.body.polygon.rotate(car.rotation);
+    car.body.translate(car.width/2, car.height/2);
+    car.body.bounce.setTo(0.9,0.9);
+    
+    car.events.onOutOfBounds.add(killCar, this);
+    
+    car.animations.add("ok", [0], false);
+    car.animations.add("crashed", [1], false);
+    car.animations.play("ok");
+}
+    
+function crashCars(c1, c2) {
+    c1.animations.play("crashed");
+    c2.animations.play("crashed");
+    
+    c1.active = false;
+    c2.active = false;
+}
+    
+function killCar(car) {
+    if(!car.active) car.kill();
+}
+
+function updateCarSpeeds() {
+    cars.forEach(function(car) {
+        if(car.active){
+            if (car.lane == activeLane) {
+                switch(activeLane){
+                    case statusUpNW:
+                        car.body.velocity.y = carSpeed;
+                        break;
+                    case statusDownNW:
+                        car.body.velocity.y = -carSpeed;
+                        break;
+                    case statusRightNW:
+                        car.body.velocity.x = -carSpeed;
+                        break;
+                    case statusLeftNW:
+                        car.body.velocity.x = carSpeed;
+                        break;
+                }
+            } else {
+                 car.body.velocity.x = 0;
+                 car.body.velocity.y = 0;
+            }
+        }
+    });
+}
+    
+function updateLane(newLane) {
+    if(activeLane != undefined) activeLane.animations.play("isRed");
+    newLane.animations.play("isGreen");
+    
+    activeLane = newLane;
+    updateLanes = false;
+}
+    
+function onGameUpdate() {
+    // keyboard input
+	if(cursors.left.isDown)  { orientationNW = 0.5*Math.PI; updateLanes = true; }
+	if(cursors.up.isDown)    { orientationNW =     Math.PI; updateLanes = true; }
+	if(cursors.right.isDown) { orientationNW = 1.5*Math.PI; updateLanes = true; }
+    if(cursors.down.isDown)  { orientationNW =           0; updateLanes = true; }
+    
+    // check for no longer active cars    
+    cars.forEach(function(car) {
+        switch(car.lane){
+            case statusUpNW:
+                if(car.y > car.lane.y) car.active = false;
+                break;
+            case statusDownNW:
+                if(car.y < car.lane.y) car.active = false;
+                break;
+            case statusRightNW:
+                if(car.x < car.lane.x) car.active = false;
+                break;
+            case statusLeftNW:
+                if(car.x > car.lane.x) car.active = false;
+                break;
+        }
+    });
+    
+    // update lanes when required
+    if(updateLanes) {
+        var newLane;
+        switch(orientationNW){
+            case 0:
+                newLane = statusUpNW;
+                break;
+            case Math.PI:
+                newLane = statusDownNW;
+                break;
+            case 0.5*Math.PI:
+                newLane = statusRightNW;
+                break;
+            case 1.5*Math.PI:
+                newLane = statusLeftNW;
+                break;
+        }
+        
+        trafficLightNW.rotation = orientationNW;
+        updateLane(newLane);
+        updateCarSpeeds();
+    }
+    
+    game.physics.collide(cars, cars, crashCars);
+}
+</script>
+</body>
+</html>
