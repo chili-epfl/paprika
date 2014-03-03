@@ -107,22 +107,13 @@ function onGameCreate() {
     game.add.sprite(  0,480, "background");
     game.add.sprite(560,480, "background");
 
-	trafficLightNW = game.add.sprite(320, 240,"trafficLight");
-    trafficLightNW.anchor.setTo(0.5,0.5);
+	trafficLightNW = newTrafficLight(320, 240);
     
     lanesNW = game.add.group();
-    
-    statusUpNW    = lanesNW.create(240, 84, "lightStatus"); // going down
-    statusUpNW.rotation = 1.5*Math.PI;
-    statusLeftNW  = lanesNW.create(164, 320, "lightStatus"); // going right
-    statusLeftNW.rotation = Math.PI;
-    statusDownNW  = lanesNW.create(400, 396, "lightStatus"); // going up
-    statusDownNW.rotation = 0.5*Math.PI;
-    statusRightNW = lanesNW.create(476, 160, "lightStatus"); // going left
-    
-    lanesNW.callAll('anchor.setTo', 'anchor', 0.5,0.5);
-    lanesNW.callAll('animations.add', 'animations', "isGreen", [0], false);
-    lanesNW.callAll('animations.add', 'animations', "isRed", [1], false);
+    statusUpNW    = newLane(240,  84, 1.5*Math.PI, lanesNW); // going down
+    statusLeftNW  = newLane(164, 320,     Math.PI, lanesNW); // going right
+    statusDownNW  = newLane(400, 396, 0.5*Math.PI, lanesNW); // going up
+    statusRightNW = newLane(476, 160,           0, lanesNW); // going left
     
     cars = game.add.group();
     initCars();
@@ -154,6 +145,23 @@ function inputRotate(e) {
     
 	orientationNW = e.goalOrientation;
     updateLanes = true;
+}
+    
+function newTrafficLight(x, y) {
+    var light = game.add.sprite(x, y, "trafficLight");
+    light.anchor.setTo(0.5, 0.5);
+    
+    return light;
+}
+
+function newLane(x, y, r, ls) {
+    var lane = ls.create(x, y, "lightStatus");
+    lane.rotation = r;
+    lane.anchor.setTo(0.5, 0.5);
+    lane.animations.add("isGreen", [0], false);
+    lane.animations.add("isRed",   [1], false);
+    
+    return lane;
 }
     
 function initCars() {
