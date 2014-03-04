@@ -49,10 +49,10 @@ var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
 var cars, lanes, activeLane;
 
 var orientations = new Object(); // angles of control cards in radians
-orientations.NW = 0;
-orientations.NE = 0;
-orientations.SW = 0;
-orientations.SE = 0;
+orientations.NW = -1;
+orientations.NE = -1;
+orientations.SW = -1;
+orientations.SE = -1;
     
 var updateLanes = false;
 var carSpeed = 100;
@@ -142,6 +142,8 @@ function onGameCreate() {
 }
 
 function resetGame() {
+    resetLanes();
+    
     cars.destroy();
     cars = game.add.group();
     initCars();
@@ -231,6 +233,13 @@ function newLane(x, y, r) {
     
     lane.animations.play("isRed");
     return lane;
+}
+
+function resetLanes() {
+    lanes.forEach(function(lane) {
+        lane.active = false;
+        lane.animations.play("isRed");
+    });
 }
     
 function initCars() {
@@ -395,6 +404,9 @@ function updateLightStatus(light, newOrientation) {
                 light.laneLeft.animations.play("isGreen");
                 light.laneLeft.active = true;
                 break;
+            default:
+                // when using an invalid rotation value, consider light innactive
+                return;
         }
         light.rotation = newOrientation;
     }
