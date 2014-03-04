@@ -2,6 +2,10 @@
 <html>
 <head>
 	<meta charset="UTF-8">
+	<link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 	<style>
 		.hidden {
 			display:none;
@@ -25,9 +29,20 @@
     <h1>Phaser Orientation Demo</h1>
     <h2>Evil Crossroads Traffic Management</h2>
     <p>Try to make the cars crash!
-    <br>Control the active lanes at the crossroads with the controller cards. (tags #1, #3, #4, #5)
+    <br>Control the active lanes at the crossroads with the controller cards.
+	<br>(tag #1 for North-West, #3 for North-East, #4 for South-West, #5 for South-East)
     <br>Reset the game by showing the reset card. (tag #2)</p>
-
+	
+	<h2>Downloads</h2>
+    <ul>
+        <li><a target="_blank" href="print/phaser_demo_2.pdf">PDF file with cards.</a></li>
+        <li><a target="_blank" href="print/phaser_demo_2_controller_1.png">PNG image of controller card NW.</a></li>
+        <li><a target="_blank" href="print/phaser_demo_2_controller_3.png">PNG image of controller card NE.</a></li>
+        <li><a target="_blank" href="print/phaser_demo_2_controller_4.png">PNG image of controller card SW.</a></li>
+        <li><a target="_blank" href="print/phaser_demo_2_controller_5.png">PNG image of controller card SE.</a></li>
+        <li><a target="_blank" href="print/phaser_demo_1_reset.png">PNG image of reset card.</a></li>
+    </ul>
+	
 	<div id="fps"></div>
     <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
     <canvas id="videoCanvas" width="640" height="480"></canvas>
@@ -413,13 +428,7 @@ function updateLightStatus(light, newOrientation) {
 }
     
 function onGameUpdate() {
-    
-    // keyboard input
-	if(cursors.left.isDown)  { orientations.NW = 0.5*Math.PI; updateLanes = true; }
-	if(cursors.up.isDown)    { orientations.NW =     Math.PI; updateLanes = true; }
-	if(cursors.right.isDown) { orientations.NW = 1.5*Math.PI; updateLanes = true; }
-    if(cursors.down.isDown)  { orientations.NW =           0; updateLanes = true; }
-    
+
     // update lanes when required
     if(updateLanes) {
         updateLightStatus(trafficLightNW, orientations.NW);
