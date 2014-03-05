@@ -157,6 +157,7 @@ function onGameCreate() {
 }
 
 function resetGame() {
+    resetLights();
     resetLanes();
     
     cars.destroy();
@@ -201,6 +202,20 @@ function newTrafficLight(x, y) {
     light.anchor.setTo(0.5, 0.5);
     
     return light;
+}
+    
+function resetLights() {
+    // reset sprite orientation
+    trafficLightNW.rotation = 0;
+    trafficLightNE.rotation = 0;
+    trafficLightSW.rotation = 0;
+    trafficLightSE.rotation = 0;
+    
+    //set invalid orientation for game logic
+    orientations.NW = -1;
+    orientations.NE = -1;
+    orientations.SW = -1;
+    orientations.SE = -1;
 }
 
 function initLanes(){
