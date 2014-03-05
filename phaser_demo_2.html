@@ -391,40 +391,38 @@ function updateCarSpeeds() {
 }
     
 function updateLightStatus(light, newOrientation) {
-    if(newOrientation != light.rotation) {
-        light.laneUp.animations.play("isRed");
-        light.laneRight.animations.play("isRed");
-        light.laneDown.animations.play("isRed");
-        light.laneLeft.animations.play("isRed");
-        
-        light.laneUp.active = false;
-        light.laneRight.active = false;
-        light.laneDown.active = false;
-        light.laneLeft.active = false;
-        
-        switch(newOrientation) {
-            case 0:
-                light.laneUp.animations.play("isGreen");
-                light.laneUp.active = true;
-                break;
-            case 0.5 * Math.PI:
-                light.laneRight.animations.play("isGreen");
-                light.laneRight.active = true;
-                break;
-            case Math.PI:
-                light.laneDown.animations.play("isGreen");
-                light.laneDown.active = true;
-                break;
-            case 1.5 * Math.PI:
-                light.laneLeft.animations.play("isGreen");
-                light.laneLeft.active = true;
-                break;
-            default:
-                // when using an invalid rotation value, consider light innactive
-                return;
-        }
-        light.rotation = newOrientation;
+    light.laneUp.animations.play("isRed");
+    light.laneRight.animations.play("isRed");
+    light.laneDown.animations.play("isRed");
+    light.laneLeft.animations.play("isRed");
+
+    light.laneUp.active = false;
+    light.laneRight.active = false;
+    light.laneDown.active = false;
+    light.laneLeft.active = false;
+
+    switch(newOrientation) {
+        case 0:
+            light.laneUp.animations.play("isGreen");
+            light.laneUp.active = true;
+            break;
+        case 0.5 * Math.PI:
+            light.laneRight.animations.play("isGreen");
+            light.laneRight.active = true;
+            break;
+        case Math.PI:
+            light.laneDown.animations.play("isGreen");
+            light.laneDown.active = true;
+            break;
+        case 1.5 * Math.PI:
+            light.laneLeft.animations.play("isGreen");
+            light.laneLeft.active = true;
+            break;
+        default:
+            // when using an invalid rotation value, consider light innactive
+            return;
     }
+    light.rotation = newOrientation;
 }
     
 function onGameUpdate() {
