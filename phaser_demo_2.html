@@ -56,9 +56,10 @@ orientations.SW = -1;
 orientations.SE = -1;
     
 var updateLanes = false;
-var totalCars = 50;
+var totalCars = 30;
+var carBirthTime = 5;
 var carSpeed = 100;
-var carSpaceInLane = 110;
+var carSpaceInLane = 120;
 
 game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
@@ -280,7 +281,7 @@ function initCars() {
     newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
     
-    game.time.events.repeat(Phaser.Timer.SECOND * 3, totalCars - 4, randomCar, this);
+    game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 4, randomCar, this);
 }
 
 function newCar(x, y, r, l) {
@@ -388,6 +389,20 @@ function crashCars(c1, c2) {
     
     c1.animations.play("crashed");
     c2.animations.play("crashed");
+    
+    if(!c1.crashed) {
+        var t = game.add.tween(c1);
+        t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
+        t.onComplete.addOnce(function() { killCar(c1); }, this);
+        t.start();
+    }
+    
+    if(!c2.crashed) {
+        var t = game.add.tween(c2);
+        t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
+        t.onComplete.addOnce(function() { killCar(c2); }, this);
+        t.start();
+    }
     
     c1.crashed = true;
     c2.crashed = true;
