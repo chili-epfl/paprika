@@ -405,7 +405,6 @@ function crashCar(c) {
     
 function killCar(car) {
     if(!car.active) car.kill();
-    if(car.lane != null) car.lane.cars -=1;
 }
     
 function updateCarLanes() {
