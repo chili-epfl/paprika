@@ -387,25 +387,20 @@ function carHasEnteredNextLane(car) {
 function crashCars(c1, c2) {
     if(!c1.crashed || !c2.crashed) crashSound.play();
     
-    c1.animations.play("crashed");
-    c2.animations.play("crashed");
-    
-    if(!c1.crashed) {
-        var t = game.add.tween(c1);
-        t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
-        t.onComplete.addOnce(function() { killCar(c1); }, this);
-        t.start();
-    }
-    
-    if(!c2.crashed) {
-        var t = game.add.tween(c2);
-        t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
-        t.onComplete.addOnce(function() { killCar(c2); }, this);
-        t.start();
-    }
-    
-    c1.crashed = true;
-    c2.crashed = true;
+    if(!c1.crashed) crashCar(c1);
+    if(!c1.crashed) crashCar(c2);
+}
+
+function crashCar(c) {
+    c.animations.play("crashed");
+
+    var t = game.add.tween(c);
+    t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
+    t.onComplete.addOnce(function() { killCar(c); }, this);
+    t.start();
+
+    c.crashed = true;
+    if(c.active && c.lane != null) c.lane.cars -=1;
 }
     
 function killCar(car) {
