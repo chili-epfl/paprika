@@ -56,7 +56,7 @@ orientations.SE = -1;
     
 var updateLanes = false;
 var carSpeed = 100;
-var laneLength = 100;
+var carSpaceInLane = 110;
 
 game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
@@ -245,6 +245,7 @@ function newLane(x, y, r) {
     lane.animations.add("isGreen", [0], false);
     lane.animations.add("isRed",   [1], false);
     lane.active = false;
+    lane.cars = 0;
     
     lane.animations.play("isRed");
     return lane;
@@ -252,6 +253,7 @@ function newLane(x, y, r) {
 
 function resetLanes() {
     lanes.forEach(function(lane) {
+        lane.cars = 0;
         lane.active = false;
         lane.animations.play("isRed");
     });
@@ -293,6 +295,8 @@ function newCar(x, y, r, l) {
     car.rotation = r;
     
     car.lane = l;
+    l.cars += 1;
+    
     car.active = true; // if within lane
     car.crashed = false;
     
@@ -335,16 +339,16 @@ function carHasEnteredNextLane(car) {
     
     switch(car.rotation){
             case 0: // going down
-                return car.y > car.lane.nextLane.y - laneLength;
+                return car.y > car.lane.nextLane.y - car.lane.nextLane.cars * carSpaceInLane - car.lane.height;
                 break;
             case 0.5*Math.PI: // going left
-                return car.x < car.lane.nextLane.x + laneLength;
+                return car.x < car.lane.nextLane.x + car.lane.nextLane.cars * carSpaceInLane + car.lane.width;
                 break;
             case Math.PI: // going up
-                return car.y < car.lane.nextLane.y + laneLength;
+                return car.y < car.lane.nextLane.y + car.lane.nextLane.cars * carSpaceInLane + car.lane.height;
                 break;
             case 1.5*Math.PI: // going right
-                return car.x > car.lane.nextLane.x - laneLength;
+                return car.x > car.lane.nextLane.x - car.lane.nextLane.cars * carSpaceInLane - car.lane.width;
         }
     return false;
 }
@@ -365,11 +369,13 @@ function updateCarLanes() {
     cars.forEach(function(car) {
         if(car.active && carHasLeftLane(car)) {
             // car has passed the light and shouldn't be stopped
+            car.lane.cars -= 1;
             car.active = false;
         }
         if(!car.active && carHasEnteredNextLane(car)) {
             // car should react to the next light
             car.lane = car.lane.nextLane;
+            car.lane.cars += 1;
             car.active = true;
         }
     });
