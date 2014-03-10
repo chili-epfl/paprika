@@ -47,7 +47,7 @@
 var game, cursors;
 var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
 var cars, lanes, activeLane;
-var crashSound;
+var crashSound, trafficSound;
 
 var orientations = new Object(); // angles of control cards in radians
 orientations.NW = -1;
@@ -121,6 +121,7 @@ function onGamePreload() {
     game.load.spritesheet("car", "img/car.png", 44, 100);
     
     game.load.audio("crash", "audio/crash_glass_short.wav");
+    game.load.audio("traffic", "audio/city_traffic.mp3");
 }
 
 function onGameCreate() {
@@ -135,6 +136,8 @@ function onGameCreate() {
     game.add.sprite(480, 480, "background");
     
     crashSound = game.add.audio("crash");
+    trafficSound = game.add.audio("traffic");
+    trafficSound.play("",0,1,true);
 
 	trafficLightNW = newTrafficLight(      320,       240);
 	trafficLightNE = newTrafficLight(480 + 320,       240);
