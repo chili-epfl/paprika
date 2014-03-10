@@ -55,6 +55,7 @@ orientations.SW = -1;
 orientations.SE = -1;
     
 var updateLanes = false;
+var totalCars = 50;
 var carSpeed = 100;
 var carSpaceInLane = 110;
 
@@ -121,6 +122,8 @@ function onGamePreload() {
 function onGameCreate() {
     // keyboard input
 	cursors = game.input.keyboard.createCursorKeys();
+    cursors.randomCar = game.input.keyboard.addKey(Phaser.Keyboard.R);
+    cursors.randomCar.onDown.add(randomCar, this);
     
     game.add.sprite(  0,   0, "background");
     game.add.sprite(480,   0, "background");
@@ -261,32 +264,18 @@ function resetLanes() {
     
 function initCars() {
     newCar(       270,    0, 0, trafficLightNW.laneUp);
-    newCar(       270, -120, 0, trafficLightNW.laneUp);
-    newCar(       270, -240, 0, trafficLightNW.laneUp);
     newCar( 480 + 270,    0, 0, trafficLightNE.laneUp);
-    newCar( 480 + 270, -120, 0, trafficLightNE.laneUp);
-    newCar( 480 + 270, -240, 0, trafficLightNE.laneUp);
     
     newCar(  50,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
-    newCar( -70,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
-    newCar(-190,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
     newCar(  50, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
-    newCar( -70, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
-    newCar(-190, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
     
     newCar(       370, 480 + 480, Math.PI, trafficLightSW.laneDown);
-    newCar(       370, 480 + 600, Math.PI, trafficLightSW.laneDown);
-    newCar(       370, 480 + 720, Math.PI, trafficLightSW.laneDown);
     newCar( 480 + 370, 480 + 480, Math.PI, trafficLightSE.laneDown);
-    newCar( 480 + 370, 480 + 600, Math.PI, trafficLightSE.laneDown);
-    newCar( 480 + 370, 480 + 720, Math.PI, trafficLightSE.laneDown);
     
     newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
-    newCar( 480 + 710,       190, 0.5*Math.PI, trafficLightNE.laneRight);
-    newCar( 480 + 830,       190, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
-    newCar( 480 + 710, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
-    newCar( 480 + 830, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
+    
+    game.time.events.repeat(Phaser.Timer.SECOND * 3, totalCars - 4, randomCar, this);
 }
 
 function newCar(x, y, r, l) {
@@ -313,6 +302,42 @@ function newCar(x, y, r, l) {
     car.animations.play("ok");
     
     return car;
+}
+
+function randomCar(){
+    switch(game.rnd.integerInRange(1, 8)){
+        case 1:
+            newCar(270, - trafficLightNW.laneUp.cars * carSpaceInLane,
+                   0, trafficLightNW.laneUp);
+            break;
+        case 2:
+            newCar(480 + 270, - trafficLightNE.laneUp.cars * carSpaceInLane,
+                   0, trafficLightNE.laneUp);
+            break;
+        case 3:
+            newCar(50 - trafficLightNW.laneLeft.cars * carSpaceInLane, 290,
+                   1.5*Math.PI, trafficLightNW.laneLeft);
+            break;
+        case 4:
+            newCar(50 - trafficLightSW.laneLeft.cars * carSpaceInLane, 480 + 290,
+                   1.5*Math.PI, trafficLightSW.laneLeft);
+            break;
+        case 5:
+            newCar(370, 480 + 480 + trafficLightSW.laneDown.cars * carSpaceInLane,
+                   Math.PI, trafficLightSW.laneDown);
+            break;
+        case 6:
+            newCar( 480 + 370, 480 + 480 + trafficLightSE.laneDown.cars * carSpaceInLane,
+                   Math.PI, trafficLightSE.laneDown);
+            break;
+        case 7:
+            newCar( 480 + 590 + trafficLightNE.laneRight.cars * carSpaceInLane, 190,
+                   0.5*Math.PI, trafficLightNE.laneRight);
+            break;
+        case 8:
+            newCar( 480 + 590 + trafficLightNE.laneRight.cars * carSpaceInLane, 480 + 190,
+                   0.5*Math.PI, trafficLightSE.laneRight);
+    }
 }
     
 function carHasLeftLane(car) {
@@ -363,6 +388,7 @@ function crashCars(c1, c2) {
     
 function killCar(car) {
     if(!car.active) car.kill();
+    if(car.lane != null) car.lane.cars -=1;
 }
     
 function updateCarLanes() {
