@@ -68,6 +68,7 @@ var successCount = 0;
 var crashedCount = 0;
 var remainingCount = totalCars;
 var startTime;
+var startScreenTime = 4;
     
 var scoreText, timeText;
 
@@ -166,6 +167,8 @@ function onGameCreate() {
     timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Arial", fill: "#ffffff", align: "center" });
     
     startTime = game.time.now;
+    
+    startScreen();
 }
 
 function resetGame() {
@@ -182,6 +185,27 @@ function resetGame() {
     crashedCount = 0;
     remainingCount = totalCars;
     startTime = game.time.now;
+    
+    startScreen();
+}
+
+function startScreen() {    
+    var graphics = game.add.graphics(0, 0);
+    graphics.beginFill(0x000000);
+    graphics.drawRect(0, 0, game.width, game.height);
+    graphics.alpha = 0.5;
+
+    var startText = game.add.text(50, 50 + 0.25 * game.height, "", { font: "58px Arial", fill: "#ffffff", align: "left" });
+    
+    game.time.events.repeat(Phaser.Timer.SECOND, startScreenTime, function() {
+        startText.setText("Crossroads Traffic Management \nwill start in:" +
+                            Math.round(startScreenTime - game.time.elapsedSecondsSince(startTime)));
+    }, this);
+    
+    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() { 
+        graphics.destroy();
+        startText.destroy();
+    }, this);
 }
 
 function onGameRender() {
