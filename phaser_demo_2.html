@@ -62,6 +62,7 @@
 var game, cursors;
 var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
 var cars, lanes, activeLane;
+var crashSound, trafficSound;
 
 var orientations = new Object(); // angles of control cards in radians
 orientations.NW = -1;
@@ -70,8 +71,10 @@ orientations.SW = -1;
 orientations.SE = -1;
     
 var updateLanes = false;
+var totalCars = 30;
+var carBirthTime = 5;
 var carSpeed = 100;
-var laneLength = 100;
+var carSpaceInLane = 120;
 
 game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
@@ -131,6 +134,9 @@ function onGamePreload() {
 	game.load.image("trafficLight", "img/trafficLight.png");
     game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
     game.load.spritesheet("car", "img/car.png", 44, 100);
+    
+    game.load.audio("crash", "audio/crash_glass_short.wav");
+    game.load.audio("traffic", "audio/city_traffic.mp3");
 }
 
 function onGameCreate() {
@@ -141,6 +147,10 @@ function onGameCreate() {
     game.add.sprite(480,   0, "background");
     game.add.sprite(  0, 480, "background");
     game.add.sprite(480, 480, "background");
+    
+    crashSound = game.add.audio("crash");
+    trafficSound = game.add.audio("traffic");
+    trafficSound.play("",0,1,true);
 
 	trafficLightNW = newTrafficLight(      320,       240);
 	trafficLightNE = newTrafficLight(480 + 320,       240);
@@ -260,6 +270,7 @@ function newLane(x, y, r) {
     lane.animations.add("isGreen", [0], false);
     lane.animations.add("isRed",   [1], false);
     lane.active = false;
+    lane.cars = 0;
     
     lane.animations.play("isRed");
     return lane;
@@ -267,6 +278,7 @@ function newLane(x, y, r) {
 
 function resetLanes() {
     lanes.forEach(function(lane) {
+        lane.cars = 0;
         lane.active = false;
         lane.animations.play("isRed");
     });
@@ -274,32 +286,18 @@ function resetLanes() {
     
 function initCars() {
     newCar(       270,    0, 0, trafficLightNW.laneUp);
-    newCar(       270, -120, 0, trafficLightNW.laneUp);
-    newCar(       270, -240, 0, trafficLightNW.laneUp);
     newCar( 480 + 270,    0, 0, trafficLightNE.laneUp);
-    newCar( 480 + 270, -120, 0, trafficLightNE.laneUp);
-    newCar( 480 + 270, -240, 0, trafficLightNE.laneUp);
     
     newCar(  50,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
-    newCar( -70,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
-    newCar(-190,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
     newCar(  50, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
-    newCar( -70, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
-    newCar(-190, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
     
     newCar(       370, 480 + 480, Math.PI, trafficLightSW.laneDown);
-    newCar(       370, 480 + 600, Math.PI, trafficLightSW.laneDown);
-    newCar(       370, 480 + 720, Math.PI, trafficLightSW.laneDown);
     newCar( 480 + 370, 480 + 480, Math.PI, trafficLightSE.laneDown);
-    newCar( 480 + 370, 480 + 600, Math.PI, trafficLightSE.laneDown);
-    newCar( 480 + 370, 480 + 720, Math.PI, trafficLightSE.laneDown);
     
     newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
-    newCar( 480 + 710,       190, 0.5*Math.PI, trafficLightNE.laneRight);
-    newCar( 480 + 830,       190, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
-    newCar( 480 + 710, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
-    newCar( 480 + 830, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
+    
+    game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
 }
 
 function newCar(x, y, r, l) {
@@ -308,6 +306,8 @@ function newCar(x, y, r, l) {
     car.rotation = r;
     
     car.lane = l;
+    l.cars += 1;
+    
     car.active = true; // if within lane
     car.crashed = false;
     
@@ -324,6 +324,42 @@ function newCar(x, y, r, l) {
     car.animations.play("ok");
     
     return car;
+}
+
+function randomCar(){
+    switch(game.rnd.integerInRange(1, 8)){
+        case 1:
+            newCar(270, - trafficLightNW.laneUp.cars * carSpaceInLane,
+                   0, trafficLightNW.laneUp);
+            break;
+        case 2:
+            newCar(480 + 270, - trafficLightNE.laneUp.cars * carSpaceInLane,
+                   0, trafficLightNE.laneUp);
+            break;
+        case 3:
+            newCar(50 - trafficLightNW.laneLeft.cars * carSpaceInLane, 290,
+                   1.5*Math.PI, trafficLightNW.laneLeft);
+            break;
+        case 4:
+            newCar(50 - trafficLightSW.laneLeft.cars * carSpaceInLane, 480 + 290,
+                   1.5*Math.PI, trafficLightSW.laneLeft);
+            break;
+        case 5:
+            newCar(370, 480 + 480 + trafficLightSW.laneDown.cars * carSpaceInLane,
+                   Math.PI, trafficLightSW.laneDown);
+            break;
+        case 6:
+            newCar( 480 + 370, 480 + 480 + trafficLightSE.laneDown.cars * carSpaceInLane,
+                   Math.PI, trafficLightSE.laneDown);
+            break;
+        case 7:
+            newCar( 480 + 590 + trafficLightNE.laneRight.cars * carSpaceInLane, 190,
+                   0.5*Math.PI, trafficLightNE.laneRight);
+            break;
+        case 8:
+            newCar( 480 + 590 + trafficLightNE.laneRight.cars * carSpaceInLane, 480 + 190,
+                   0.5*Math.PI, trafficLightSE.laneRight);
+    }
 }
     
 function carHasLeftLane(car) {
@@ -350,26 +386,37 @@ function carHasEnteredNextLane(car) {
     
     switch(car.rotation){
             case 0: // going down
-                return car.y > car.lane.nextLane.y - laneLength;
+                return car.y > car.lane.nextLane.y - car.lane.nextLane.cars * carSpaceInLane - car.lane.height;
                 break;
             case 0.5*Math.PI: // going left
-                return car.x < car.lane.nextLane.x + laneLength;
+                return car.x < car.lane.nextLane.x + car.lane.nextLane.cars * carSpaceInLane + car.lane.width;
                 break;
             case Math.PI: // going up
-                return car.y < car.lane.nextLane.y + laneLength;
+                return car.y < car.lane.nextLane.y + car.lane.nextLane.cars * carSpaceInLane + car.lane.height;
                 break;
             case 1.5*Math.PI: // going right
-                return car.x > car.lane.nextLane.x - laneLength;
+                return car.x > car.lane.nextLane.x - car.lane.nextLane.cars * carSpaceInLane - car.lane.width;
         }
     return false;
 }
     
 function crashCars(c1, c2) {
-    c1.animations.play("crashed");
-    c2.animations.play("crashed");
+    if(!c1.crashed || !c2.crashed) crashSound.play();
     
-    c1.crashed = true;
-    c2.crashed = true;
+    if(!c1.crashed) crashCar(c1);
+    if(!c1.crashed) crashCar(c2);
+}
+
+function crashCar(c) {
+    c.animations.play("crashed");
+
+    var t = game.add.tween(c);
+    t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
+    t.onComplete.addOnce(function() { killCar(c); }, this);
+    t.start();
+
+    c.crashed = true;
+    if(c.active && c.lane != null) c.lane.cars -=1;
 }
     
 function killCar(car) {
@@ -380,11 +427,13 @@ function updateCarLanes() {
     cars.forEach(function(car) {
         if(car.active && carHasLeftLane(car)) {
             // car has passed the light and shouldn't be stopped
+            car.lane.cars -= 1;
             car.active = false;
         }
         if(!car.active && carHasEnteredNextLane(car)) {
             // car should react to the next light
             car.lane = car.lane.nextLane;
+            car.lane.cars += 1;
             car.active = true;
         }
     });
