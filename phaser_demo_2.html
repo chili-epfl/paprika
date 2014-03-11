@@ -67,9 +67,11 @@ var carSpaceInLane = 120;
 var successCount = 0;
 var crashedCount = 0;
 var remainingCount = totalCars;
-var startTime;
-var startScreenTime = 4;
     
+var startTime, finalTime;
+var startScreenTime = 4;
+var startEndGraphics, startEndText;
+
 var scoreText, timeText;
 
 game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
@@ -166,7 +168,10 @@ function onGameCreate() {
     scoreText = game.add.text(10, 10, "", { font: "24px Arial", fill: "#ffffff", align: "left" });
     timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Arial", fill: "#ffffff", align: "center" });
     
-    startTime = game.time.now;
+    startEndGraphics = game.add.graphics(0, 0);
+    startEndGraphics.beginFill(0x000000);
+    startEndGraphics.drawRect(0, 0, game.width, game.height);
+    startEndText = game.add.text(50, 50 + 0.25 * game.height, "", { font: "58px Arial", fill: "#ffffff", align: "left" });
     
     startScreen();
 }
@@ -184,28 +189,34 @@ function resetGame() {
     successCount = 0;
     crashedCount = 0;
     remainingCount = totalCars;
-    startTime = game.time.now;
     
     startScreen();
 }
 
-function startScreen() {    
-    var graphics = game.add.graphics(0, 0);
-    graphics.beginFill(0x000000);
-    graphics.drawRect(0, 0, game.width, game.height);
-    graphics.alpha = 0.5;
-
-    var startText = game.add.text(50, 50 + 0.25 * game.height, "", { font: "58px Arial", fill: "#ffffff", align: "left" });
+function startScreen() {
+    startTime = game.time.now;
+    finalTime = Number.MAX_VALUE;
+    
+    startEndGraphics.alpha = 0.5;
     
     game.time.events.repeat(Phaser.Timer.SECOND, startScreenTime, function() {
-        startText.setText("Crossroads Traffic Management \nwill start in:" +
+        startEndText.setText("Crossroads Traffic Management \nwill start in:" +
                             Math.round(startScreenTime - game.time.elapsedSecondsSince(startTime)));
     }, this);
     
-    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() { 
-        graphics.destroy();
-        startText.destroy();
+    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() {
+        startEndGraphics.alpha = 0;
+        startEndText.setText("");
     }, this);
+}
+
+function endScreen() {
+    finalTime = Math.min(finalTime, Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
+    
+    startEndGraphics.alpha = 0.5;
+    startEndText.setText("Score: " + (successCount + crashedCount) +
+                      "\n(" + successCount + " - " + crashedCount + ")" +
+                      "\nTime: " + finalTime + " sec.");
 }
 
 function onGameRender() {
@@ -536,7 +547,9 @@ function updateScore() {
                       "\nSuccessful: " + successCount +
                       "\nCrashed: " + crashedCount);
     
-    timeText.setText("Time:\n" + Math.round(game.time.elapsedSecondsSince(startTime)));
+    timeText.setText("Time:\n" + Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
+    
+    if(remainingCount == 0 || successCount + crashedCount == totalCars) endScreen();
 }
     
 function onGameUpdate() {
