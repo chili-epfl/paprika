@@ -57,9 +57,19 @@ orientations.SE = -1;
     
 var updateLanes = false;
 var totalCars = 30;
+var gameStartTime = 10;
 var carBirthTime = 5;
+var crashedLifespan = 2;
 var carSpeed = 100;
 var carSpaceInLane = 120;
+    
+// score counters
+var successCount = 0;
+var crashedCount = 0;
+var remainingCount = totalCars;
+var startTime;
+    
+var scoreText, timeText;
 
 game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
@@ -151,6 +161,11 @@ function onGameCreate() {
     initCars();
     
     initPaprikaEvents();
+    
+    scoreText = game.add.text(10, 10, "", { font: "24px Arial", fill: "#ffffff", align: "left" });
+    timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Arial", fill: "#ffffff", align: "center" });
+    
+    startTime = game.time.now;
 }
 
 function resetGame() {
@@ -162,6 +177,11 @@ function resetGame() {
     initCars();
     
     updateLanes = false;
+    
+    successCount = 0;
+    crashedCount = 0;
+    remainingCount = totalCars;
+    startTime = game.time.now;
 }
 
 function onGameRender() {
@@ -284,7 +304,10 @@ function initCars() {
     newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
     
-    game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 4, randomCar, this);
+    // wait before spawning cars
+    game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
+        game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
+    }, this);
 }
 
 function newCar(x, y, r, l) {
@@ -304,7 +327,7 @@ function newCar(x, y, r, l) {
     car.body.translate(car.width/2, car.height/2);
     car.body.bounce.setTo(0.9,0.9);
     
-    car.events.onOutOfBounds.add(killCar, this);
+    car.events.onOutOfBounds.add(successfulCarKill, this);
     
     car.animations.add("ok", [0], false);
     car.animations.add("crashed", [1], false);
@@ -398,16 +421,24 @@ function crashCar(c) {
     c.animations.play("crashed");
 
     var t = game.add.tween(c);
-    t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
-    t.onComplete.addOnce(function() { killCar(c); }, this);
+    t.to({ alpha: 0 }, Phaser.Timer.SECOND * crashedLifespan, Phaser.Easing.Linear.None);
+    t.onComplete.addOnce(function() { c.kill(); }, this);
     t.start();
 
     c.crashed = true;
     if(c.active && c.lane != null) c.lane.cars -=1;
+    
+    crashedCount++;
+    remainingCount--;
 }
     
-function killCar(car) {
-    if(!car.active) car.kill();
+function successfulCarKill(car) {
+    if(!car.active) {
+        car.kill();
+    
+        successCount++;
+        remainingCount--;
+    }
 }
     
 function updateCarLanes() {
@@ -476,8 +507,15 @@ function updateLightStatus(light, newOrientation) {
     light.rotation = newOrientation;
 }
     
-function onGameUpdate() {
+function updateScore() {
+    scoreText.setText("Remaining: " + remainingCount +
+                      "\nSuccessful: " + successCount +
+                      "\nCrashed: " + crashedCount);
     
+    timeText.setText("Time:\n" + Math.round(game.time.elapsedSecondsSince(startTime)));
+}
+    
+function onGameUpdate() {
     // keyboard input
 	if(cursors.left.isDown)  { orientations.NW = 0.5*Math.PI; updateLanes = true; }
 	if(cursors.up.isDown)    { orientations.NW =     Math.PI; updateLanes = true; }
@@ -499,6 +537,8 @@ function onGameUpdate() {
     updateCarSpeeds();
     
     game.physics.collide(cars, cars, crashCars);
+    
+    updateScore();
 }
 </script>
 </body>
