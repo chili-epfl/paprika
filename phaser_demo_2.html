@@ -84,6 +84,7 @@ var tagTrafficLightNE = "tag_3";
 var tagTrafficLightSW = "tag_4";
 var tagTrafficLightSE = "tag_5";
 var tagReset = "tag_2";
+var paprikaTriggers = [];
     
 function initPaprikaEvents() {
     // chilitags info
@@ -104,22 +105,22 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE, 1.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW, 1.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE, 1.5*Math.PI, 0.1*Math.PI);
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE,           0, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE, 0.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE,     Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE, 1.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW,           0, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW, 0.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW,     Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW, 1.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE,           0, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE, 0.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE,     Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE, 1.5*Math.PI, 0.1*Math.PI));
     
     // restart game
     onAppear(resetGame, tagReset);
@@ -194,6 +195,10 @@ function resetGame() {
     remainingCount = totalCars;
     
     startScreen();
+    
+    paprikaTriggers.forEach(function(trigger) {
+        trigger.reset();
+    });
 }
 
 function startScreen() {
