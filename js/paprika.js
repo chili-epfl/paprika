@@ -76,8 +76,6 @@ var onAppear = function(callback, objectName) {
     
     // the logic computing whether or not calling `callback`
     var trigger = function(objects) {
-        function reset() { wasPresent = false; }
-        
         // compute current visibility
         var isPresent = (objectName in objects);
         // detect if entered
@@ -85,6 +83,7 @@ var onAppear = function(callback, objectName) {
         // save current visibility
         wasPresent = isPresent;
     };
+    trigger.reset = function() { wasPresent = false; }
     
     // we add this trigger to the list of callbacks
     updateCallbacks.push(trigger);
@@ -100,8 +99,6 @@ var onDisappear = function(callback, objectName) {
     
     // the logic computing whether or not calling `callback`
     var trigger = function(objects) {
-        function reset() { wasPresent = false; }
-        
         // compute current visibility
         var isPresent = (objectName in objects);
         // detect if exited
@@ -109,6 +106,7 @@ var onDisappear = function(callback, objectName) {
         // save current visibility
         wasPresent = isPresent;
     };
+    trigger.reset = function() { wasPresent = false; }
     
     // we add this trigger to the list of callbacks
     updateCallbacks.push(trigger);
@@ -126,8 +124,6 @@ var onRotate = function(callback, objectName, minDelta) {
     // the logic computing whether or not calling `callback` when an object's
     // transformation matrix has been updated
     var trigger = function(transformation) {
-        function reset() { previousOrientation = undefined; }
-
         // format the transformationMatrix into a THREE.Matrix4
         var transformationMatrix = new THREE.Matrix4();
         transformationMatrix.set.apply(transformationMatrix, transformation);
@@ -166,6 +162,7 @@ var onRotate = function(callback, objectName, minDelta) {
             previousOrientation = orientation;
         }
     };
+    trigger.reset = function() { previousOrientation = undefined; }
 
     // we add this trigger to the list of callbacks related to `objectName`
     if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
@@ -191,8 +188,6 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
 
     // same as onRotate...
     var trigger = function(transformation) {
-        function reset() { isIn = false; }
-        
         var transformationMatrix = new THREE.Matrix4();
         transformationMatrix.set.apply(transformationMatrix, transformation);
         var euler = new THREE.Euler().setFromRotationMatrix(transformationMatrix);
@@ -226,6 +221,7 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
             }
         }
     };
+    trigger.reset = function() { isIn = false; }
 
     // we add this trigger to the list of callbacks related to `objectName`
     if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
