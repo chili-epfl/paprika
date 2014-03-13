@@ -166,13 +166,13 @@ function onGameCreate() {
     
     initPaprikaEvents();
     
-    scoreText = game.add.text(10, 10, "", { font: "24px Arial", fill: "#ffffff", align: "left" });
-    timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Arial", fill: "#ffffff", align: "center" });
+    scoreText = game.add.text(10, 10, "", { font: "24px Impact", fill: "#ffffff", align: "left" });
+    timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Impact", fill: "#ffffff", align: "center" });
     
     startEndGraphics = game.add.graphics(0, 0);
     startEndGraphics.beginFill(0x000000);
     startEndGraphics.drawRect(0, 0, game.width, game.height);
-    startEndText = game.add.text(50, 50 + 0.25 * game.height, "", { font: "58px Arial", fill: "#ffffff", align: "left" });
+    startEndText = game.add.text(180, 150 + 0.25 * game.height, "", { font: "58px Impact", fill: "#ffffff", align: "center" });
     
     startScreen();
 }
@@ -203,7 +203,7 @@ function startScreen() {
     startEndGraphics.alpha = 0.5;
     
     game.time.events.repeat(Phaser.Timer.SECOND, startScreenTime, function() {
-        startEndText.setText("Crossroads Traffic Management \nwill start in:" +
+        startEndText.setText("Crossroads Traffic Management \nwill start in:\n" +
                             Math.round(startScreenTime - game.time.elapsedSecondsSince(startTime)));
     }, this);
     
