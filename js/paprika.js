@@ -132,7 +132,15 @@ var onRotate = function(callback, objectName, minDelta) {
         var orientation = angles.z;
 
         // initialisation of previousOrientation
-        if (previousOrientation === undefined) previousOrientation = orientation;
+        if (previousOrientation === undefined) {
+            previousOrientation = orientation;
+            
+            callback({
+                objectName:objectName,
+                transformation:transformation,
+                orientation:orientation,
+                delta:0});
+        }
 
         // computing the rotation since `previousOrientation`,
         // and normalizing in ]-Math.PI, Math.PI]
