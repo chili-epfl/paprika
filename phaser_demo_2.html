@@ -62,6 +62,7 @@ var carBirthTime = 5;
 var crashedLifespan = 2;
 var carSpeed = 100;
 var carSpaceInLane = 120;
+var spawnCarsEvent;
     
 // score counters
 var successCount = 0;
@@ -177,6 +178,8 @@ function onGameCreate() {
 }
 
 function resetGame() {
+    game.time.events.remove(spawnCarsEvent);
+    
     resetLights();
     resetLanes();
     
@@ -214,7 +217,7 @@ function endScreen() {
     finalTime = Math.min(finalTime, Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
     
     startEndGraphics.alpha = 0.5;
-    startEndText.setText("Score: " + (successCount + crashedCount) +
+    startEndText.setText("Score: " + (successCount - crashedCount) +
                       "\n(" + successCount + " - " + crashedCount + ")" +
                       "\nTime: " + finalTime + " sec.");
 }
@@ -340,8 +343,8 @@ function initCars() {
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
     
     // wait before spawning cars
-    game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
-        game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
+    spawnCarsEvent = game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
+        spawnCarsEvent = game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
     }, this);
 }
 
