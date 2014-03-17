@@ -229,3 +229,22 @@ var onOrient = function(callback, objectName, goalOrientation, epsilon) {
     
     return trigger;
 };
+
+var removeTrigger = function(trigger) {
+    if(trigger.objectName === undefined) {
+        var triggerIndex = updateCallbacks.indexOf(trigger);
+        if (triggerIndex != -1) {
+            updateCallbacks.splice(triggerIndex, 1);
+            return true;
+        }
+    } else {
+        if (trigger.objectName in objectCallbacks) {
+            var triggerIndex = objectCallbacks[trigger.objectName].indexOf(trigger);
+            if (triggerIndex != -1) {
+                objectCallbacks[trigger.objectName].splice(triggerIndex, 1);
+                return true;
+            }
+        }
+    }
+    return false;    
+}
