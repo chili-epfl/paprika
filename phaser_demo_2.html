@@ -47,6 +47,7 @@
 var game, cursors;
 var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
 var cars, lanes, activeLane;
+var carsCollisionGroup;
 var crashSound, trafficSound;
 
 var orientations = new Object(); // angles of control cards in radians
@@ -159,10 +160,13 @@ function onGameCreate() {
 	trafficLightSW = newTrafficLight(      320, 480 + 240);
 	trafficLightSE = newTrafficLight(480 + 320, 480 + 240);
     
-    lanes = game.add.group();
     initLanes();
     
-    cars = game.add.group();
+    //  Enable P2 physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.p2.setImpactEvents(true);
+    carsCollisionGroup = game.physics.p2.createCollisionGroup();
+    
     initCars();
     
     initPaprikaEvents();
@@ -179,13 +183,13 @@ function onGameCreate() {
 }
 
 function resetGame() {
+    game.physics.p2.clear();
     game.time.events.remove(spawnCarsEvent);
     
     resetLights();
     resetLanes();
     
     cars.destroy();
-    cars = game.add.group();
     initCars();
     
     updateLanes = false;
@@ -230,8 +234,7 @@ function endScreen() {
 function onGameRender() {
     // phaser debug information
     // only visible when game is run with Phaser.CANVAS
-    game.debug.renderCameraInfo(game.camera, 32, 32);
-    cars.forEach(function(car) { game.debug.renderSpriteBody(car); }); // display cars bounding box
+//    cars.forEach(function(car) { game.debug.spriteBounds(car); }); // display cars bounding box
 
 }
     
@@ -279,6 +282,8 @@ function resetLights() {
 }
 
 function initLanes(){
+    lanes = game.add.group();
+    
     trafficLightNW.laneUp    = newLane(240,  84, 1.5*Math.PI); // going down
     trafficLightNW.laneLeft  = newLane(164, 320,     Math.PI); // going right
     trafficLightNW.laneDown  = newLane(400, 396, 0.5*Math.PI); // going up
@@ -335,6 +340,8 @@ function resetLanes() {
 }
     
 function initCars() {
+    cars = game.add.group();
+    
     newCar(       270,    0, 0, trafficLightNW.laneUp);
     newCar( 480 + 270,    0, 0, trafficLightNE.laneUp);
     
@@ -347,7 +354,7 @@ function initCars() {
     newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
     
-    // wait before spawning cars
+     // wait before spawning cars
     spawnCarsEvent = game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
         spawnCarsEvent = game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
     }, this);
@@ -355,8 +362,6 @@ function initCars() {
 
 function newCar(x, y, r, l) {
     var car = cars.create(x, y, "car");
-    car.anchor.setTo(0.5, 0.5);
-    car.rotation = r;
     
     car.lane = l;
     l.cars += 1;
@@ -365,10 +370,12 @@ function newCar(x, y, r, l) {
     car.crashed = false;
     
     // bounding box and crash physics
-    car.body.translate(-car.width/2, -car.height/2);
-    car.body.polygon.rotate(car.rotation);
-    car.body.translate(car.width/2, car.height/2);
-    car.body.bounce.setTo(0.9,0.9);
+    game.physics.p2.enable(car, false);
+    car.body.rotation = r;
+    car.body.setCollisionGroup(carsCollisionGroup);
+    car.body.collides(carsCollisionGroup, crashCars, this);
+    car.body.setZeroDamping();
+
     
     car.events.onOutOfBounds.add(successfulCarKill, this);
     
@@ -418,7 +425,7 @@ function randomCar(){
 function carHasLeftLane(car) {
     if(car.lane == null) return true; // shouldn't trigger
     
-    switch(car.rotation){
+    switch(car.body.rotation){
             case 0: // going down
                 return car.y - 0.5*car.height > car.lane.y;
                 break;
@@ -437,7 +444,7 @@ function carHasLeftLane(car) {
 function carHasEnteredNextLane(car) {
     if(car.lane.nextLane == null) return false; // shouldn't trigger
     
-    switch(car.rotation){
+    switch(car.body.rotation){
             case 0: // going down
                 return car.y > car.lane.nextLane.y - car.lane.nextLane.cars * carSpaceInLane - car.lane.height;
                 break;
@@ -454,13 +461,14 @@ function carHasEnteredNextLane(car) {
 }
     
 function crashCars(c1, c2) {
-    if(!c1.crashed || !c2.crashed) crashSound.play();
+    if(!c1.sprite.crashed || !c2.sprite.crashed) crashSound.play();
     
-    if(!c1.crashed) crashCar(c1);
-    if(!c1.crashed) crashCar(c2);
+    if(!c1.sprite.crashed) crashCar(c1.sprite);
+    if(!c1.sprite.crashed) crashCar(c2.sprite);
 }
 
 function crashCar(c) {
+    c.body.damping = 0.5;
     c.animations.play("crashed");
 
     var t = game.add.tween(c);
@@ -505,11 +513,9 @@ function updateCarSpeeds() {
         // only update speeds of active uncrashed cars
         if(!car.crashed && car.active) {
             if(car.lane != null && car.lane.active) {
-                car.body.velocity.x = - Math.sin(car.rotation) * carSpeed;
-                car.body.velocity.y =   Math.cos(car.rotation) * carSpeed;
+                car.body.moveForward(-carSpeed);
             } else {
-                car.body.velocity.x = 0;
-                car.body.velocity.y = 0;
+                car.body.setZeroVelocity();
             }
         }
     });
@@ -580,9 +586,6 @@ function onGameUpdate() {
     // update cars
     updateCarLanes();
     updateCarSpeeds();
-    
-    game.physics.collide(cars, cars, crashCars);
-    
     updateScore();
 }
 </script>
