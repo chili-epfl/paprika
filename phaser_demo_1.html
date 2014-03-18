@@ -44,6 +44,7 @@ var game, cursors;
 var trafficLight;
 var lanes, statusUp, statusDown, statusLeft, statusRight;
 var cars, activeLane;
+var carsCollisionGroup;
     
 var orientation = 0;    // angle of control tag in radians
 var updateLanes = false;
@@ -118,15 +119,20 @@ function onGameCreate() {
     lanes.callAll('animations.add', 'animations', "isGreen", [0], false);
     lanes.callAll('animations.add', 'animations', "isRed", [1], false);
     
-    cars = game.add.group();
+    //  Enable P2 physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.p2.setImpactEvents(true);
+    carsCollisionGroup = game.physics.p2.createCollisionGroup();
+    
     initCars();
     
     initPaprikaEvents();
 }
 
 function resetGame() {
+    game.physics.p2.clear();
     cars.destroy();
-    cars = game.add.group();
+    
     initCars();
     
     lanes.callAll('animations.play', 'animations', "isRed");
@@ -137,8 +143,7 @@ function resetGame() {
 function onGameRender() {
     // phaser debug information
     // only visible when game is run with Phaser.CANVAS
-    game.debug.renderCameraInfo(game.camera, 32, 32);
-    cars.forEach(function(car) { game.debug.renderSpriteBody(car); }); // display cars bounding box
+//    cars.forEach(function(car) { game.debug.spriteBounds(car); }); // display cars bounding box
 
 }
     
@@ -151,6 +156,8 @@ function inputRotate(e) {
 }
     
 function initCars() {
+    cars = game.add.group();
+    
     newCar(270, 0, 0, statusUp);
     newCar(270, -120, 0, statusUp);
     newCar(270, -240, 0, statusUp);
@@ -167,17 +174,15 @@ function initCars() {
 
 function newCar(x, y, r, l) {
     var car = cars.create(x, y, "car");
-    car.anchor.setTo(0.5, 0.5);
-    car.rotation = r;
     
     car.lane = l;
     car.active = true; // if still within lane and uncrashed
     
     // bounding box and crash physics
-    car.body.translate(-car.width/2, -car.height/2);
-    car.body.polygon.rotate(car.rotation);
-    car.body.translate(car.width/2, car.height/2);
-    car.body.bounce.setTo(0.9,0.9);
+    game.physics.p2.enable(car, false);
+    car.body.rotation = r;
+    car.body.setCollisionGroup(carsCollisionGroup);
+    car.body.collides(carsCollisionGroup, crashCars, this);
     
     car.events.onOutOfBounds.add(killCar, this);
     
@@ -187,11 +192,11 @@ function newCar(x, y, r, l) {
 }
     
 function crashCars(c1, c2) {
-    c1.animations.play("crashed");
-    c2.animations.play("crashed");
+    c1.sprite.animations.play("crashed");
+    c2.sprite.animations.play("crashed");
     
-    c1.active = false;
-    c2.active = false;
+    c1.sprite.active = false;
+    c2.sprite.active = false;
 }
     
 function killCar(car) {
@@ -202,23 +207,9 @@ function updateCarSpeeds() {
     cars.forEach(function(car) {
         if(car.active){
             if (car.lane == activeLane) {
-                switch(activeLane){
-                    case statusUp:
-                        car.body.velocity.y = carSpeed;
-                        break;
-                    case statusDown:
-                        car.body.velocity.y = -carSpeed;
-                        break;
-                    case statusRight:
-                        car.body.velocity.x = -carSpeed;
-                        break;
-                    case statusLeft:
-                        car.body.velocity.x = carSpeed;
-                        break;
-                }
+                car.body.moveForward(-carSpeed);
             } else {
-                 car.body.velocity.x = 0;
-                 car.body.velocity.y = 0;
+                car.body.setZeroVelocity();
             }
         }
     });
@@ -279,8 +270,6 @@ function onGameUpdate() {
         updateLane(newLane);
         updateCarSpeeds();
     }
-    
-    game.physics.collide(cars, cars, crashCars);
 }
 </script>
 </body>
