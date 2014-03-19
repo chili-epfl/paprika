@@ -146,10 +146,10 @@ function onGameCreate() {
     cursors.randomCar = game.input.keyboard.addKey(Phaser.Keyboard.R);
     cursors.randomCar.onDown.add(randomCar, this);
     
-    game.add.sprite(  0,   0, "background");
-    game.add.sprite(480,   0, "background");
-    game.add.sprite(  0, 480, "background");
-    game.add.sprite(480, 480, "background");
+    game.add.image(  0,   0, "background");
+    game.add.image(480,   0, "background");
+    game.add.image(  0, 480, "background");
+    game.add.image(480, 480, "background");
     
     crashSound = game.add.audio("crash");
     trafficSound = game.add.audio("traffic");
