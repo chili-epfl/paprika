@@ -362,6 +362,7 @@ function initCars() {
 
 function newCar(x, y, r, l) {
     var car = cars.create(x, y, "car");
+    car.checkWorldBounds = true;
     
     car.lane = l;
     l.cars += 1;
