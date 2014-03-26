@@ -31,9 +31,37 @@ var updateCallbacks = [];
 // mapping from objects (aggregates of tags) to specific callbacks
 var objectCallbacks = {};
 
+// stuff for multithreading
+var worker = new Worker("js/chilitagsWorker.js");
+var waitForWorker = false;
+
+// receive from worker
+worker.onmessage = function(event) {
+    var objects = event.data.objects;
+    
+    for (var i=0; i<updateCallbacks.length; i++) {
+        updateCallbacks[i].call(this, objects);
+    }
+    for (var objectName in objects) {
+        if (objectName in objectCallbacks) {
+            var callbacks = objectCallbacks[objectName];
+            for (var i=0; i < callbacks.length; i++) {
+                callbacks[i].call(this, objects[objectName]);
+            }
+        }
+    }
+    
+    waitForWorker = false;
+};
+
+worker.onerror = function(error) {
+  dump("Worker error: " + error.message + "\n");
+  throw error;
+};
+
 // detection loop, calling the functions in updateCallbacks and objectCallbacks
 var loop = function() {
-    if (localMediaStream) {
+    if (localMediaStream && !waitForWorker) {
         var videoIsReady = false;
         while (!videoIsReady) {
             try {
@@ -43,18 +71,12 @@ var loop = function() {
                 if (e.name.indexOf("NS_ERROR_NOT_AVAILABLE") == -1) throw e;
             }
         }
-        var objects = Chilitags.estimate(videoCanvas, false);
-        for (var i=0; i<updateCallbacks.length; i++) {
-            updateCallbacks[i].call(this, objects);
-        }
-        for (var objectName in objects) {
-            if (objectName in objectCallbacks) {
-                var callbacks = objectCallbacks[objectName];
-                for (var i=0; i < callbacks.length; i++) {
-                    callbacks[i].call(this, objects[objectName]);
-                }
-            }
-        }
+        var ctx = videoCanvas.getContext('2d');
+        var img = ctx.getImageData(0, 0, videoCanvas.width, videoCanvas.height);
+
+        // send the image info to the worker
+        worker.postMessage({img: img, w: videoCanvas.width, h: videoCanvas.height});
+        waitForWorker = true;
     }
     requestAnimationFrame(loop);
 }
@@ -89,7 +111,7 @@ var onAppear = function(callback, objectName) {
     updateCallbacks.push(trigger);
     
     return trigger;
-}
+};
 
 // registers a `callback`function to call when `objectName` has exited the view
 var onDisappear = function(callback, objectName) {
@@ -112,7 +134,7 @@ var onDisappear = function(callback, objectName) {
     updateCallbacks.push(trigger);
     
     return trigger;
-}
+};
 
 // registers a `callback` function to call when `objectName` has been rotated
 // by at least `minDelta` radians
@@ -246,5 +268,5 @@ var removeTrigger = function(trigger) {
             }
         }
     }
-    return false;    
+    return false;
 }
