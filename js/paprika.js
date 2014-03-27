@@ -65,7 +65,7 @@ var loop = function() {
         var videoIsReady = false;
         while (!videoIsReady) {
             try {
-                videoCanvas.getContext('2d').drawImage(inputVideo, 0, 0, video.width, video.height);
+                videoCanvas.getContext('2d').drawImage(video, 0, 0, video.width, video.height);
                 videoIsReady = true;
             } catch (e) {
                 if (e.name.indexOf("NS_ERROR_NOT_AVAILABLE") == -1) throw e;
