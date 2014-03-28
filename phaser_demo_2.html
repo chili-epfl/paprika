@@ -3,11 +3,12 @@
 <head>
 	<meta charset="UTF-8">
 	<style>
-		.hidden {
-			display:none;
-		}
-		canvas {
-            float: left;
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
         }
         #gameFrame {
             float: left;
@@ -20,27 +21,24 @@
 </head>
 
 <body> 
-    <div style="float:left; width:660px;">
-        
-    <h1>Phaser Orientation Demo</h1>
-    <h2>Evil Crossroads Traffic Management</h2>
-    <p>Try to make the cars crash!
-    <br>Control the active lanes at the crossroads with the controller cards. (tags #1, #3, #4, #5)
-    <br>Reset the game by showing the reset card. (tag #2)</p>
+    <div id="leftColumn">
+        <h1>Phaser Orientation Demo</h1>
+        <h2>Evil Crossroads Traffic Management</h2>
+        <p>Try to make the cars crash!
+        <br>Control the active lanes at the crossroads with the controller cards. (tags #1, #3, #4, #5)
+        <br>Reset the game by showing the reset card. (tag #2)</p>
 
-	<div id="fps"></div>
-    <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
-    <canvas id="videoCanvas" width="640" height="480"></canvas>
-        
+        <div id="fps"></div>
+        <div id="videoFrame"></div>
     </div>
     
-    <div id="gameFrame"></div>
+    <div id="rightColumn">
+        <div id="gameFrame"></div>
+    </div>
 
-    <script src="js/chilitags.js"></script>
 	<script src="js/three.min.js"></script>
-    <script src="js/paprika.js"></script>
-	
 	<script src="js/phaser.min.js"></script>
+    <script src="js/paprika.js"></script>
 	
 <script>
 // Phaser variables
@@ -88,13 +86,15 @@ var tagReset = "tag_2";
 var paprikaTriggers = [];
     
 function initPaprikaEvents() {
+    Paprika.start(document.getElementById('videoFrame'));
+    
     // chilitags info
     fpsText = document.createTextNode('');
     document.getElementById('fps').appendChild(fpsText);
 
     start = new Date();
 
-    onTagUpdate(function(objects) {
+    Paprika.onTagUpdate(function(objects) {
         var end = new Date();
 
         var str = 'Objects: ';
@@ -106,25 +106,25 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE,           0, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE, 0.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE,     Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightNE, 1.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW,           0, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW, 0.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW,     Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSW, 1.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE,           0, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE, 0.5*Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE,     Math.PI, 0.1*Math.PI));
-    paprikaTriggers.push(onOrient(inputRotate, tagTrafficLightSE, 1.5*Math.PI, 0.1*Math.PI));
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE, 1.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW, 1.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE, 1.5*Math.PI, 0.1*Math.PI) );
     
     // restart game
-    onAppear(resetGame, tagReset);
+    Paprika.onAppear(resetGame, tagReset);
 }
 
 function onGamePreload() {
