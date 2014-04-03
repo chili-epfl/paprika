@@ -31,6 +31,19 @@
 
         Paprika.onOrient(function (e) {alert("orientation: " + (e.hasEntered?""+ e.orientation:"not 45"))}, "tag_0", 45);
 
+        // tags 0 to 4 are on the corners of a 10x10cm square.
+        // Each is 3.33cm large
+        // tag 0 will still be independently estimated ("kept"), the others
+        // are "swallowed" into the `card` bundle
+        cardBundle = {};
+        cardBundle[0] = {size: 33.3, translation: [-33.3, -33.3, 0.], keep: 1};
+        cardBundle[1] = {size: 33.3, translation: [ 33.3, -33.3, 0.]};
+        cardBundle[2] = {size: 33.3, translation: [ 33.3,  33.3, 0.]};
+        cardBundle[3] = {size: 33.3, translation: [-33.3,  33.3, 0.]};
+        Paprika.bundleTags({card: cardBundle});
+
+        Paprika.start(document.getElementById('inputVideo'));
+
     </script>
 </body>
 </html>
