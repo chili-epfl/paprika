@@ -12,7 +12,7 @@ var Paprika = Paprika || ( function () {
     var videoCanvas;
     var localMediaStream = null;
 
-    var worker;
+    var worker = new Worker("js/chilitagsWorker.js");
     var waitForWorker = false;
 
     // list of functions to call back when tags have been detected in a new frame
@@ -37,7 +37,7 @@ var Paprika = Paprika || ( function () {
             var img = ctx.getImageData(0, 0, videoCanvas.width, videoCanvas.height);
 
             // send the image info to the worker
-            worker.postMessage({img: img, w: videoCanvas.width, h: videoCanvas.height});
+            worker.postMessage({type: "estimate", img: img, w: videoCanvas.width, h: videoCanvas.height});
             waitForWorker = true;
         }
         requestAnimationFrame(loop);
@@ -79,9 +79,6 @@ var Paprika = Paprika || ( function () {
                 },
                 function(e) { console.log('Error!', e); }
             );
-
-            // stuff for multithreading
-            worker = new Worker("js/chilitagsWorker.js");
 
             // receive from worker
             worker.onmessage = function(event) {
@@ -296,6 +293,10 @@ var Paprika = Paprika || ( function () {
                 }
             }
             return false;
+        },
+
+        bundleTags : function(bundles) {
+            worker.postMessage({type: "bundle", bundles: bundles});
         }
     }
 
