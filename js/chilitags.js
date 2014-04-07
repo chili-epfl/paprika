@@ -7777,7 +7777,6 @@ function setFilter(persistence, gain) {
     Module.ccall('setFilter', 'void', ['float', 'float'], [persistence, gain]);
 }
 Module['setFilter'] = setFilter;
-
 function find (canvas) {
     var ctx = canvas.getContext('2d');
     var inputBuf = Module._malloc(canvas.width*canvas.height);
@@ -7791,17 +7790,14 @@ function find (canvas) {
     return JSON.parse(output);
 }
 Module['find'] = find;
-
 function set2DFilter(persistence, gain) {
     Module.ccall('set2DFilter', 'void', ['float', 'float'], [persistence, gain]);
 }
 Module['set2DFilter'] = set2DFilter;
-
 function set3DFilter(persistence, gain) {
     Module.ccall('set3DFilter', 'void', ['float', 'float'], [persistence, gain]);
 }
 Module['set3DFilter'] = set3DFilter;
-
 //Detect tags and return JSON object including pairs of tag name and its transformation matrix
 function estimate (canvas, rectification) {
     var ctx = canvas.getContext('2d');
@@ -7813,7 +7809,6 @@ function estimate (canvas, rectification) {
     }
     var output = Module.ccall('estimate', 'string', ['int', 'int', 'int', 'boolean'], [inputBuf, canvas.width, canvas.height, rectification]);
     var obj = JSON.parse(output);
-
     if(rectification){
         var outputImage = ctx.createImageData(canvas.width, canvas.height);
         for(var i=0; i<canvas.width*canvas.height; i++){
@@ -7830,10 +7825,9 @@ function estimate (canvas, rectification) {
     return obj
 }
 Module['estimate'] = estimate;
-
 //Set marker configuration
 var tagConfigFileNumber = 1;
-function readTagConfiguration(file, omitOtherTags) {
+function readTagConfiguration(file, omitOtherTags, callback) {
     var reader = new FileReader;
     reader.readAsArrayBuffer(file);
     reader.onload = function() {
@@ -7841,18 +7835,17 @@ function readTagConfiguration(file, omitOtherTags) {
         var node = FS.createDataFile('/', fileName, new Uint8Array(reader.result), true, true);
         tagConfigFileNumber++;
         Module.ccall('readTagConfiguration', 'void', ['string', 'boolean'], [fileName, omitOtherTags]);
+        callback();
     }
 }
 Module['readTagConfiguration'] = readTagConfiguration;
-
 function setDefaultTagSize(defaultSize) {
     Module.ccall('setDefaultTagSize', 'void', ['float'], [defaultSize]);
 }
 Module['setDefaultTagSize'] = setDefaultTagSize;
-
 //Set new camera calibration
 var cameraCalibrationFileNumber = 1;
-function readCalibration(file) {
+function readCalibration(file, callback) {
     var reader = new FileReader;
     reader.readAsArrayBuffer(file);
     reader.onload = function() {
@@ -7860,10 +7853,10 @@ function readCalibration(file) {
         var node = FS.createDataFile('/', fileName, new Uint8Array(reader.result), true, true);
         cameraCalibrationFileNumber++;
         Module.ccall('readCalibration', 'void', ['string'], [fileName]);
+        callback();
     }
 }
 Module['readCalibration'] = readCalibration;
-
 //Return projection matrix
 function getCameraMatrix() {
     var buf = Module._malloc(4*9);
@@ -7876,7 +7869,6 @@ function getCameraMatrix() {
     return matrix;
 }
 Module['getCameraMatrix'] = getCameraMatrix;
-
 //Return projection matrix
 function getDistortionCoeffs() {
     var buf = Module._malloc(4*5);
@@ -7889,5 +7881,4 @@ function getDistortionCoeffs() {
     return matrix;
 }
 Module['getDistortionCoeffs'] = getDistortionCoeffs;
-
 this['Chilitags'] = Module;
