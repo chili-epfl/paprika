@@ -11,6 +11,8 @@ var Paprika = Paprika || ( function () {
     var video;
     var videoCanvas;
     var localMediaStream = null;
+    
+    var camera;
 
     var worker = new Worker("js/chilitagsWorker.js");
     var waitForWorker = false;
@@ -82,27 +84,47 @@ var Paprika = Paprika || ( function () {
 
             // receive from worker
             worker.onmessage = function(event) {
-                var objects = event.data.objects;
+                switch(event.data.type) {
+                    case "estimate":
+                        var objects = event.data.objects;
 
-                for (var i=0; i<updateCallbacks.length; i++) {
-                    updateCallbacks[i].call(this, objects);
-                }
-                for (var objectName in objects) {
-                    if (objectName in objectCallbacks) {
-                        var callbacks = objectCallbacks[objectName];
-                        for (var i=0; i < callbacks.length; i++) {
-                            callbacks[i].call(this, objects[objectName]);
+                        for (var i=0; i<updateCallbacks.length; i++) {
+                            updateCallbacks[i].call(this, objects);
                         }
-                    }
-                }
+                        for (var objectName in objects) {
+                            if (objectName in objectCallbacks) {
+                                var callbacks = objectCallbacks[objectName];
+                                for (var i=0; i < callbacks.length; i++) {
+                                    callbacks[i].call(this, objects[objectName]);
+                                }
+                            }
+                        }
 
-                waitForWorker = false;
+                        waitForWorker = false;
+                        break;
+                        
+                    case "camera":
+                        var far = 1000, near = 10, width = 640, height = 480;
+                        var m = event.data.cameraMatrix;
+                        
+                        camera = new THREE.Camera();
+                        camera.projectionMatrix.set(
+                            2*m[0]/width,              0,        2*m[2]/width-1,  0,
+                                       0, -2*m[4]/height,    -(2*m[5]/height-1),  0,
+                                       0,              0, (far+near)/(far-near), -2*far*near/(far-near),
+                                       0,              0,                     1,  0
+                        );
+                        
+                        break;
+                }
             };
 
             worker.onerror = function(error) {
               dump("Worker error: " + error.message + "\n");
               throw error;
             };
+            
+            worker.postMessage({type: "camera", h:480, w:640});
 
             // start the detection
             //the timeOut is a work around Firefox's bug 879717
@@ -125,7 +147,27 @@ var Paprika = Paprika || ( function () {
                 // compute current visibility
                 var isPresent = (objectName in objects);
                 // detect if entered
-                if(!wasPresent && isPresent) callback( {objectName:objectName} );
+                if(!wasPresent && isPresent) {
+                    var transformation = objects[objectName];
+                    var transformationMatrix = new THREE.Matrix4();
+                    transformationMatrix.set.apply(transformationMatrix, transformation);
+                    
+                    var widthHalf = 320, heightHalf = 240;
+
+                    var vector = new THREE.Vector3();
+                    var projector = new THREE.Projector();
+                    projector.projectVector( vector.setFromMatrixPosition( transformationMatrix ), camera );
+
+                    var pixelPosX = Math.round(( vector.x * widthHalf ) + widthHalf);
+                    var pixelPosY = Math.round(- ( vector.y * heightHalf ) + heightHalf);
+                    
+                    callback({ 
+                        objectName:objectName,
+                        transformation:transformation,
+                        pixelPosX:pixelPosX,
+                        pixelPosY:pixelPosY,
+                        });
+                }
                 // save current visibility
                 wasPresent = isPresent;
             };
