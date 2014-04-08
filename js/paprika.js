@@ -1,3 +1,121 @@
+// inline workers from:
+// https://github.com/dreame4/inline-worker
+
+;(function (__global__) {
+	'use strict';
+
+	function isWorkerSupported() {
+		return !!__global__.Worker;
+	}
+
+	function InlineWorker(fn, imports) {
+		if (!isWorkerSupported()) {
+			throw new Error('Web Worker is not supported');
+		}
+
+		if (!(this instanceof InlineWorker)) {
+			return new InlineWorker(fn, imports);
+		}
+
+		this.fnBody = 'self.onmessage = function (event) { self.postMessage( (' 
+        + fn.toString() 
+        + ').call(self, event.data) ) };';
+        
+        this.imports = "";
+        
+        if(imports){
+            this.imports += "importScripts('" + imports + "');";
+        }
+        
+		this.worker = this.resolve = this.reject = this.onmessage = this.onerror = null;
+		this.injected = [];
+	}
+
+	InlineWorker.prototype = {
+		constructor: InlineWorker,
+
+		_assertWorker: function assertWorker() {
+			var blob;
+
+			if (this.worker) {
+				return;
+			}
+			blob = new Blob([this.imports.concat(this.fnBody)].concat(this.injected), 
+                            { type: "application\/javascript" });
+			this.worker = new Worker(__global__.URL.createObjectURL(blob));
+		},
+
+		run: function run(message, transferList) {
+			this._assertWorker();
+//			this.worker.postMessage(message, transferList || null);
+			this.worker.postMessage(message);
+			this.worker.onmessage = this._onMessage.bind(this);
+			this.worker.onerror = this._onError.bind(this);
+			return this;
+		},
+
+		_onMessage: function onMessage(e) {
+			this.resolve = e.data;
+			// if then() has already been called
+			if (this.onmessage) {
+				this.onmessage(e.data);
+			}
+		},
+
+		_onError: function onError(e) {
+			this.reject = e;
+			// if then() has already been called
+			if (this.onerror) {
+				this.onerror(e.message, e.filename, e.lineno, e);
+			}
+		},
+
+		then: function then(success, error) {
+			var err;
+			//this._assertWorker();
+
+			if (typeof success === 'function') {
+				this.onmessage = success;
+				// Worker finished execution
+				if (this.resolve) {
+					this.onmessage(this.resolve);
+				}
+			}
+			if (typeof error === 'function') {
+				this.onerror = error;
+				// Worker finished execution
+				if (this.reject) {
+					err = this.reject;
+					this.onerror(err.message, err.filename, err.lineno, err);
+				}
+			}
+			return this;
+		},
+
+		inject: function inject() {
+			var argv = Array.prototype.slice.call(arguments),
+				argc = argv.length,
+				i = 0,
+				fn;
+
+			for (; i < argc; i++) {
+				fn = argv[i];
+				if (typeof fn === 'function') {
+					// @TODO: check if function is named
+					this.injected.push(fn.toString());
+				}
+			}
+
+			return this;
+		}
+	};
+
+	__global__.InlineWorker = InlineWorker;
+
+}(window));
+
+// Paprika
+
 var Paprika = Paprika || ( function () {
     // navigator compatibility
     navigator.getUserMedia  = navigator.getUserMedia
@@ -14,8 +132,117 @@ var Paprika = Paprika || ( function () {
     
     var camera;
 
-    var worker = new Worker("js/chilitagsWorker.js");
     var waitForWorker = false;
+    
+    var worker = new InlineWorker(
+        function(data) {            
+            switch (data.type) {
+                case "estimate":
+                    return workerEstimate(data.img, data.w, data.h);
+                    break;
+
+                case "bundle":
+                    return workerBundle(data.bundles);
+                    break;
+
+                case "camera":
+                    return workerCameraInfo(data.w, data.h);
+            }
+        },
+        "https://raw.githubusercontent.com/chili-epfl/paprika/master/js/chilitags.js"
+    );
+    
+    function workerEstimate(img, w, h) {
+        var inputBuf = Module._malloc(w*h);
+
+        for(var i=0; i<img.data.length/4; i++){
+            setValue(inputBuf+i, 
+                     Math.min(0.299 * img.data[4*i] + 
+                              0.587 * img.data[4*i+1] + 
+                              0.114 * img.data[4*i+2], 
+                              255), 
+                     "i8");
+        }
+
+        var output = Module.ccall('estimate', 'string', ['int', 'int', 'int', 'boolean'], [inputBuf, w, h, false]);
+        var objects = JSON.parse(output);
+        Module._free(inputBuf);
+        
+        return {type:"estimate", objects:objects};
+    };
+
+    function workerBundle(bundles) {
+        var configFile = '%YAML:1.0\n';
+        for (var bundleId in bundles) {
+            configFile += bundleId+':\n';
+            var bundle = bundles[bundleId];
+            for (var tagId in bundle) {
+                configFile += '  - tag: '+tagId+'\n';
+                var tagInfo = bundle[tagId];
+                if ("size" in tagInfo) 
+                    configFile += '    size: '+tagInfo["size"]+'\n';
+                if ("translation" in tagInfo) 
+                    configFile += '    translation: ['+tagInfo["translation"]+']\n';
+                if ("rotation" in tagInfo) 
+                    configFile += '    rotation: ['+tagInfo["rotation"]+']\n';
+                if ("keep" in tagInfo) 
+                    configFile += '    keep: '+tagInfo["keep"]+'\n';
+            }
+        }
+        FS.createDataFile("/", "tagConfig.yml", configFile, true, true);
+        Module.ccall('readTagConfiguration', 'void', ['string', 'boolean'], ["/tagConfig.yml", false]);
+    };
+    
+    function workerCameraInfo() {;
+        return {type:"camera", cameraMatrix:Chilitags.getCameraMatrix()};
+    };
+    
+    worker.inject(workerEstimate, workerBundle, workerCameraInfo);
+
+    // receive from worker
+    worker.then( function(data) {
+        if(data === undefined) {
+            console.log("undefined data from worker...");
+            return;
+        }
+        switch(data.type) {
+            case "estimate":
+                var objects = data.objects;
+
+                for (var i=0; i<updateCallbacks.length; i++) {
+                    updateCallbacks[i].call(this, objects);
+                }
+                for (var objectName in objects) {
+                    if (objectName in objectCallbacks) {
+                        var callbacks = objectCallbacks[objectName];
+                        for (var i=0; i < callbacks.length; i++) {
+                            callbacks[i].call(this, objects[objectName]);
+                        }
+                    }
+                }
+
+                waitForWorker = false;
+                break;
+
+            case "camera":
+                var far = 1000, near = 10, width = 640, height = 480;
+                var m = data.cameraMatrix;
+
+                camera = new THREE.Camera();
+                camera.projectionMatrix.set(
+                    2*m[0]/width,              0,        2*m[2]/width-1,  0,
+                               0, -2*m[4]/height,    -(2*m[5]/height-1),  0,
+                               0,              0, (far+near)/(far-near), -2*far*near/(far-near),
+                               0,              0,                     1,  0
+                );
+
+                break;
+        }
+    },
+    function(error) {
+      dump("Worker error: " + error.message + "\n");
+      throw error;
+    } );
 
     // list of functions to call back when tags have been detected in a new frame
     var updateCallbacks = [];
@@ -39,7 +266,7 @@ var Paprika = Paprika || ( function () {
             var img = ctx.getImageData(0, 0, videoCanvas.width, videoCanvas.height);
 
             // send the image info to the worker
-            worker.postMessage({type: "estimate", img: img, w: videoCanvas.width, h: videoCanvas.height});
+            worker.run({type: "estimate", img: img, w: videoCanvas.width, h: videoCanvas.height});
             waitForWorker = true;
         }
         requestAnimationFrame(loop);
@@ -81,50 +308,8 @@ var Paprika = Paprika || ( function () {
                 },
                 function(e) { console.log('Error!', e); }
             );
-
-            // receive from worker
-            worker.onmessage = function(event) {
-                switch(event.data.type) {
-                    case "estimate":
-                        var objects = event.data.objects;
-
-                        for (var i=0; i<updateCallbacks.length; i++) {
-                            updateCallbacks[i].call(this, objects);
-                        }
-                        for (var objectName in objects) {
-                            if (objectName in objectCallbacks) {
-                                var callbacks = objectCallbacks[objectName];
-                                for (var i=0; i < callbacks.length; i++) {
-                                    callbacks[i].call(this, objects[objectName]);
-                                }
-                            }
-                        }
-
-                        waitForWorker = false;
-                        break;
-                        
-                    case "camera":
-                        var far = 1000, near = 10, width = 640, height = 480;
-                        var m = event.data.cameraMatrix;
-                        
-                        camera = new THREE.Camera();
-                        camera.projectionMatrix.set(
-                            2*m[0]/width,              0,        2*m[2]/width-1,  0,
-                                       0, -2*m[4]/height,    -(2*m[5]/height-1),  0,
-                                       0,              0, (far+near)/(far-near), -2*far*near/(far-near),
-                                       0,              0,                     1,  0
-                        );
-                        
-                        break;
-                }
-            };
-
-            worker.onerror = function(error) {
-              dump("Worker error: " + error.message + "\n");
-              throw error;
-            };
             
-            worker.postMessage({type: "camera", h:480, w:640});
+            worker.run({type: "camera", h:480, w:640});
 
             // start the detection
             //the timeOut is a work around Firefox's bug 879717
@@ -338,7 +523,7 @@ var Paprika = Paprika || ( function () {
         },
 
         bundleTags : function(bundles) {
-            worker.postMessage({type: "bundle", bundles: bundles});
+            worker.run({type: "bundle", bundles: bundles});
         }
     }
 
