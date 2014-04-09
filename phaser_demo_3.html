@@ -55,9 +55,9 @@ var asteroidGroup;
 var totalAsteroids = 30;
 var asteroidDistance = 800;
     
-var gameStartTime = 8;
-var asteroidBirthTime = 4;
-var asteroidSpeed = 50;
+var gameStartTime = 4;
+var asteroidBirthTime = 2;
+var asteroidSpeed = 100;
 var spawnAsteroidsEvent;
     
 // score counters
@@ -231,6 +231,7 @@ function initLasers() {
     laserGroup.createMultiple(30, 'laser');
     laserGroup.setAll('anchor.x', 0.5);
     laserGroup.setAll('anchor.y', 1);
+    laserGroup.setAll('checkWorldBounds', true);
     laserGroup.setAll('outOfBoundsKill', true);
 }
     
@@ -304,13 +305,6 @@ function shootLaser() {
             firingTime = game.time.now + shotDelay;
         }
     }
-}
-    
-function resetBullet (bullet) {
-
-    //  Called if the bullet goes out of the screen
-    bullet.kill();
-
 }
     
 function collisionHandler(laser, asteroid) {
