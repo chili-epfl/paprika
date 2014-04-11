@@ -41,10 +41,12 @@
     <script src="js/paprika.js"></script>
 	
 <script>
+var aa;
+    
 // Phaser variables
 var game, cursors;
 var spaceship;
-var orientation;
+var orientation = 0;
 
 var laserGroup;
 var shotDelay = 200;
@@ -56,13 +58,13 @@ var totalAsteroids = 30;
 var asteroidDistance = 800;
     
 var gameStartTime = 4;
-var asteroidBirthTime = 2;
-var asteroidSpeed = 100;
+var asteroidBirthTime = 3;
+var asteroidSpeed = 60;
 var spawnAsteroidsEvent;
     
 // score counters
-var successCount = 0;
-var crashedCount = 0;
+var destroyedCount = 0;
+var evadedCount = 0;
 var remainingCount = totalAsteroids;
     
 var startTime, finalTime;
@@ -75,7 +77,9 @@ game = new Phaser.Game(800,600,Phaser.AUTO, "gameFrame", {preload:onGamePreload,
 
 // chilitags variables
 var fpsText, start;
-var tagSpaceship = "tag_1";
+var tagSpaceshipW = "tag_11";
+var tagSpaceshipB = "tag_12";
+var tagShootLaser = "tag_13";
 var tagReset = "tag_2";
 var paprikaTriggers = [];
     
@@ -100,17 +104,41 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    Paprika.onOrient(inputRotate, tagSpaceship,            0, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship, 0.25*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship, 0.5 *Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship, 0.75*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship,      Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship, 1.25*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship, 1.5 *Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceship, 1.75*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW,            0, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW, 0.25*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW, 0.5 *Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW, 0.75*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW,      Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW, 1.25*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW, 1.5 *Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipW, 1.75*Math.PI, 0.1*Math.PI);
     
-    // shoot
-    Paprika.onAppear(shootLaser, tagSpaceship);
+    Paprika.onOrient(inputRotate, tagSpaceshipB,            0, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB, 0.25*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB, 0.5 *Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB, 0.75*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB,      Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB, 1.25*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB, 1.5 *Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagSpaceshipB, 1.75*Math.PI, 0.1*Math.PI);
+    
+    // mode switching logic
+    Paprika.onAppear( function() {
+        if(spaceship.mode != "white"){
+            spaceship.animations.play("B2W");
+            spaceship.mode = "white";
+        }
+    }, tagSpaceshipW );
+    
+    Paprika.onAppear( function() {
+        if(spaceship.mode != "black"){
+            spaceship.animations.play("W2B");
+            spaceship.mode = "black";
+        }
+    }, tagSpaceshipB );
+    
+    // shoot logic
+    Paprika.onAppear(shootLaser, tagShootLaser);
     
     // restart game
     Paprika.onAppear(resetGame, tagReset);
@@ -119,19 +147,20 @@ function initPaprikaEvents() {
 function onGamePreload() {
     // loading assets
 	game.stage.backgroundColor = '#006666';
+    game.stage.smoothed = false;
     
 //    game.load.image("background", "img/crossroad.png");
-	game.load.image("spaceship", "img/asteroids_spaceship.png");
-	game.load.image("asteroid_s", "img/asteroids_small.png");
-	game.load.image("asteroid_l", "img/asteroids_large.png");
-    game.load.image("laser", "img/asteroids_laser.png");
+	game.load.spritesheet("spaceship", "img/asteroids_spaceship.png", 32, 32);
+	game.load.spritesheet("asteroid_s", "img/asteroids_small.png", 32, 32);
+	game.load.spritesheet("asteroid_l", "img/asteroids_large.png", 64, 32);
+    game.load.spritesheet("laser", "img/asteroids_laser.png", 1, 16);
 }
 
 function onGameCreate() {
     // keyboard input
 	cursors = game.input.keyboard.createCursorKeys();
     cursors.randomAsteroid = game.input.keyboard.addKey(Phaser.Keyboard.R);
-    cursors.randomAsteroid.onDown.add(randomAsteroid, this);
+    cursors.randomAsteroid.onDown.add(function() { aa = new randomAsteroid(); }, this);
     cursors.fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     cursors.fireButton.onDown.add(shootLaser, this);
     
@@ -166,8 +195,8 @@ function resetGame() {
     asteroidGroup.destroy();
     initAsteroids();
     
-    successCount = 0;
-    crashedCount = 0;
+    destroyedCount = 0;
+    evadedCount = 0;
     remainingCount = totalAsteroids;
     
     startScreen();
@@ -198,15 +227,15 @@ function endScreen() {
     finalTime = Math.min(finalTime, Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
     
     startEndGraphics.alpha = 0.5;
-    startEndText.setText("Score: " + (successCount - crashedCount) +
-                      "\n(" + successCount + " - " + crashedCount + ")" +
-                      "\nTime: " + finalTime + " sec.");
+    startEndText.setText( "Score: " + destroyedCount +
+                          "\nTime: " + finalTime + " sec.");
 }
 
 function onGameRender() {
     // phaser debug information
     // only visible when game is run with Phaser.CANVAS
 //    cars.forEach(function(car) { game.debug.spriteBounds(car); }); // display cars bounding box
+//    if(aa !== undefined) game.debug.spriteInfo(aa, 532, 32);
 
 }
     
@@ -219,7 +248,16 @@ function inputRotate(e) {
     
 function newSpaceship(x, y) {
     var spaceship = game.add.sprite(x, y, "spaceship");
+    spaceship.animations.add("W2B", [0, 1, 2, 3, 4, 5, 6], false);
+    spaceship.animations.add("B2W", [6, 5, 4, 3, 2, 1, 0], false);
+    
+    game.physics.enable(spaceship, Phaser.Physics.ARCADE);
+    spaceship.body.setSize(16, 16, 8, 8);
     spaceship.anchor.setTo(0.5,0.5);
+    spaceship.rotation = orientation;
+    
+    spaceship.mode = "white";
+    spaceship.animations.play("B2W");
     
     return spaceship;
 }
@@ -233,56 +271,9 @@ function initLasers() {
     laserGroup.setAll('anchor.y', 1);
     laserGroup.setAll('checkWorldBounds', true);
     laserGroup.setAll('outOfBoundsKill', true);
+    laserGroup.callAll('animations.add', 'animations', 'W', [0], false);
+    laserGroup.callAll('animations.add', 'animations', 'B', [1], false);
 }
-    
-function initAsteroids() {
-    asteroidGroup = game.add.group();
-    asteroidGroup.enableBody = true;
-    
-    spawnAsteroidsEvent = game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
-        spawnAsteroidsEvent = game.time.events.repeat(Phaser.Timer.SECOND * asteroidBirthTime, totalAsteroids, randomAsteroid, this);
-    }, this);
-}
-
-function newAsteroid(x, y, t) {
-    var asteroid;
-    
-    if(game.rnd.pick([0, 1]) == 1) {
-        asteroid = asteroidGroup.create(x, y, "asteroid_s");
-    } else {
-        asteroid = asteroidGroup.create(x, y, "asteroid_l");
-    }
-    
-    asteroid.anchor.setTo(0.5,0.5);
-    asteroid.checkWorldBounds = true;
-    asteroid.rotation = game.rnd.integerInRange(0, 7) * 0.25 * Math.PI;
-    asteroid.destroyed = false;
-    
-//    asteroid.events.onOutOfBounds.add(successfulCarKill, this);
-    
-//    car.animations.add("ok", [0], false);
-//    car.animations.add("crashed", [1], false);
-//    car.animations.play("ok");
-    
-    return asteroid;
-}
-
-function randomAsteroid(){
-    var angle = game.rnd.integerInRange(0, 7) * 0.5 * Math.PI;    
-    return newAsteroid(
-        spaceship.x + asteroidDistance * Math.cos(angle), 
-        spaceship.y + asteroidDistance * Math.sin(angle), 
-        spaceship);
-}
-    
-//function successfulCarKill(car) {
-//    if(!car.active) {
-//        car.kill();
-//    
-//        successCount++;
-//        remainingCount--;
-//    }
-//}
     
 function shootLaser() {
     if (game.time.now > firingTime)
@@ -303,16 +294,97 @@ function shootLaser() {
             laser.body.velocity.y = -laserSpeed * Math.cos(spaceship.rotation);
             
             firingTime = game.time.now + shotDelay;
+            
+            laser.mode = spaceship.mode;
+            switch(laser.mode){
+                case "white":
+                    laser.animations.play("W");
+                break;
+                case "black":
+                    laser.animations.play("B");
+                break;
+            }
         }
     }
 }
     
-function collisionHandler(laser, asteroid) {
-    laser.kill();
-    asteroid.kill();
+function initAsteroids() {
+    asteroidGroup = game.add.group();
+    asteroidGroup.enableBody = true;
+    asteroidGroup.physicsBodyType = Phaser.Physics.ARCADE;
     
-    successCount++;
-    remainingCount--;
+    spawnAsteroidsEvent = game.time.events.add(
+        Phaser.Timer.SECOND * gameStartTime,
+        function() { 
+            spawnAsteroidsEvent = game.time.events.repeat(
+                Phaser.Timer.SECOND * asteroidBirthTime,
+                totalAsteroids,
+                randomAsteroid,
+                this);
+        }
+        , this);
+}
+
+function newAsteroid(x, y, a) {
+    var asteroid;
+    
+    if(game.rnd.pick([0, 1]) == 1) {
+        asteroid = asteroidGroup.create(x, y, "asteroid_s");
+    } else {
+        asteroid = asteroidGroup.create(x, y, "asteroid_l");
+    }
+
+    asteroid.animations.add("W", [0], false);
+    asteroid.animations.add("B", [1], false);
+    
+    if(game.rnd.pick([0, 1]) == 1) {
+        asteroid.animations.play("W");
+        asteroid.mode = "white";
+    } else {
+        asteroid.animations.play("B");
+        asteroid.mode = "black";
+    }
+  
+    asteroid.anchor.setTo(0.5,0.5);
+    asteroid.rotation = a + game.rnd.integerInRange(0, 3) * 0.5 * Math.PI;
+    
+    asteroid.active = true;
+    asteroid.checkWorldBounds = true;
+    asteroid.events.onOutOfBounds.add(asteroidGone, this);
+    
+    game.physics.arcade.moveToObject(asteroid, spaceship, asteroidSpeed);
+    
+    return asteroid;
+}
+
+function randomAsteroid(){
+    var angle = game.rnd.integerInRange(0, 7) * 0.25 * Math.PI;    
+    return newAsteroid(
+        spaceship.x + asteroidDistance * Math.cos(angle), 
+        spaceship.y + asteroidDistance * Math.sin(angle), 
+        angle);
+}
+    
+function asteroidGone(asteroid) {
+    if(!asteroid.active) {
+        asteroid.kill();
+        remainingCount--;
+    }
+}
+    
+function asteroidDown(laser, asteroid) {
+    if(laser.mode == asteroid.mode) {
+        laser.kill();
+        asteroid.kill();
+
+        destroyedCount++;
+        remainingCount--;
+    }
+}
+
+function spaceshipDown(spaceship, asteroid) {
+    asteroid.active = false;
+//    resetGame();
 }
     
 function updateOrientation() {
@@ -321,12 +393,12 @@ function updateOrientation() {
     
 function updateScore() {
     scoreText.setText("Remaining: " + remainingCount +
-                      "\nSuccessful: " + successCount +
-                      "\nCrashed: " + crashedCount);
+                      "\nDestroyed: " + destroyedCount +
+                      "\nEvaded: " + evadedCount);
     
     timeText.setText("Time:\n" + Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
     
-    if(remainingCount == 0 || successCount + crashedCount == totalAsteroids) endScreen();
+    if(remainingCount == 0 || destroyedCount + evadedCount == totalAsteroids) endScreen();
 }
     
 function onGameUpdate() {
@@ -339,11 +411,8 @@ function onGameUpdate() {
     // update cars
     updateOrientation();
     
-    asteroidGroup.forEach( function(asteroid) {
-        game.physics.arcade.moveToObject(asteroid, spaceship, asteroidSpeed);
-    });
-    
-    game.physics.arcade.overlap(laserGroup, asteroidGroup, collisionHandler, null, this);
+    game.physics.arcade.overlap(laserGroup, asteroidGroup, asteroidDown, null, this);
+    game.physics.arcade.overlap(spaceship, asteroidGroup, spaceshipDown, null, this);
 
     updateScore();
 }
