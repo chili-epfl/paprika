@@ -84,7 +84,7 @@ var tagReset = "tag_2";
 var paprikaTriggers = [];
     
 function initPaprikaEvents() {
-    Paprika.start(document.getElementById('videoFrame'));
+    Paprika.start("videoFrame");
     
     // chilitags info
     fpsText = document.createTextNode('');
@@ -369,6 +369,7 @@ function asteroidGone(asteroid) {
     if(!asteroid.active) {
         asteroid.kill();
         remainingCount--;
+        evadedCount++;
     }
 }
     
@@ -384,6 +385,10 @@ function asteroidDown(laser, asteroid) {
 
 function spaceshipDown(spaceship, asteroid) {
     asteroid.active = false;
+    
+    if(asteroid.mode === spaceship.mode) {
+        // spaceship destroyed
+    }
 //    resetGame();
 }
     

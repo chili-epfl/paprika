@@ -274,12 +274,12 @@ var Paprika = Paprika || ( function () {
 
     return {
 
-        start : function(divElem, videoElem, visible) {
+        start : function(divId, videoId, visible) {
             visible = typeof visible !== "undefined" ? visible : true;
             
-            if(videoElem !== undefined && videoElem.tagName.toLowerCase() === "video") {
-                video = videoElem;
-            } else {
+            if(videoId !== undefined) video = document.getElementById(videoId);
+            
+            if(video === undefined || video == null) {
                 video = document.createElement("video");
                 video.autoplay = true;
                 video.width = 640;
@@ -292,8 +292,8 @@ var Paprika = Paprika || ( function () {
             videoCanvas.height = 480;
             if(!visible) videoCanvas.style.display = "none";
             
-            if(divElem !== undefined && divElem.tagName.toLowerCase() === "div") {
-                divElem.appendChild(videoCanvas);
+            if(divId !== undefined && document.getElementById(divId) != null) {
+                document.getElementById(divId).appendChild(videoCanvas);
             } else {
                 document.body.appendChild(videoCanvas);
             }
