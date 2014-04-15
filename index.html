@@ -5,7 +5,7 @@
 </head>
 
 <body> 
-    <video id="inputVideo" autoplay class="hidden" width="640" height="480"></video>
+    <video id="inputVideo" autoplay width="640" height="480"></video>
     <div id="fps"> </div>
 
     <script src="js/chilitags.js"></script>
@@ -16,7 +16,7 @@
         document.getElementById('fps').appendChild(fpsText);
 
         var start = new Date();
-        Paprika.onTagUpdate(function(objects) {
+        Paprika.onUpdate(function(objects) {
             var end = new Date();
 
             var str = 'Objects: ';
@@ -42,7 +42,7 @@
         cardBundle[3] = {size: 33.3, translation: [-33.3,  33.3, 0.]};
         Paprika.bundleTags({card: cardBundle});
 
-        Paprika.start(document.getElementById('inputVideo'));
+        Paprika.start(null, 'inputVideo', false);
 
     </script>
 </body>

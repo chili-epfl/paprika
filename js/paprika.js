@@ -290,9 +290,10 @@ var Paprika = Paprika || ( function () {
             videoCanvas = document.createElement("canvas");
             videoCanvas.width = 640;
             videoCanvas.height = 480;
-            if(!visible) videoCanvas.style.display = "none";
             
-            if(divId !== undefined && document.getElementById(divId) != null) {
+            if(!visible) {
+                videoCanvas.style.display = "none";
+            } else if(divId !== undefined && document.getElementById(divId) != null) {
                 document.getElementById(divId).appendChild(videoCanvas);
             } else {
                 document.body.appendChild(videoCanvas);
@@ -317,7 +318,7 @@ var Paprika = Paprika || ( function () {
         },
 
         // registers a function to call when a new frame has been process by Chilitags
-        onTagUpdate : function(callback) {
+        onUpdate : function(callback) {
             updateCallbacks.push(callback);
         },
 
