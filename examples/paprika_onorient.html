@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #exampleFrame {
+            width: 640px;
+            height: 480px;
+        }
+	</style>
+</head>
+
+<body>
+        <h1>Paprika examples</h1>
+        <h2>Paprika.onOrient(callback, objectName)</h2>
+        <h3>Uses tags: tag_1</h3>
+    
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var exampleFrame = document.getElementById("exampleFrame");
+        var tagText = document.createTextNode('');
+        var tagDiv = document.createElement("div");
+        tagDiv.style.position = "relative";
+        tagDiv.style.left = "300px";
+        tagDiv.style.top = "220px";
+        tagDiv.appendChild(tagText);
+        exampleFrame.appendChild(tagDiv);
+        
+        var updateDiv = function(data) {
+            var d = 180 * data.goalOrientation / Math.PI;
+            tagText.nodeValue = d + "°";
+
+            switch(d) {
+                case 0:
+                    exampleFrame.style.backgroundColor = "#55FF55";
+                    break;
+                case 90:
+                    exampleFrame.style.backgroundColor = "#FF5555";
+                    break;
+                case 180:
+                    exampleFrame.style.backgroundColor = "#5555FF";
+                    break;
+                case 270:
+                    exampleFrame.style.backgroundColor = "#FFFF55";
+                    break;    
+            }
+        }
+        
+        Paprika.start("videoFrame");
+
+        Paprika.onOrient(updateDiv, "tag_1",           0, 0.1*Math.PI);
+        Paprika.onOrient(updateDiv, "tag_1", 0.5*Math.PI, 0.1*Math.PI);
+        Paprika.onOrient(updateDiv, "tag_1",     Math.PI, 0.1*Math.PI);
+        Paprika.onOrient(updateDiv, "tag_1", 1.5*Math.PI, 0.1*Math.PI);
+
+    </script>
+</body>
+</html>
