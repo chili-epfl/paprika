@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+	</style>
+</head>
+
+<body>
+    <h1>Paprika examples</h1>
+    <h2>Paprika.onUpdate(callback)</h2>
+    <h3>Uses tags: any</h3>
+        
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var fpsText = document.createTextNode("");
+        document.getElementById("exampleFrame").appendChild(fpsText);
+
+        var start = new Date();
+    
+        Paprika.onUpdate(function(objects) {
+            var end = new Date();
+            var str = "Objects: ";
+            
+            for(var obj in objects) { str += obj + ", "; }
+            
+            fpsText.nodeValue = "Chilitags processing = " + 
+                                (end.getTime() - start.getTime()) + 
+                                "ms.\n" + str;
+            start = end;
+        });
+
+        Paprika.start("videoFrame");
+    </script>
+</body>
+</html>

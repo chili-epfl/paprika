@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #exampleFrame {
+            width: 640px;
+            height: 480px;
+        }
+	</style>
+</head>
+
+<body>
+        <h1>Paprika examples</h1>
+        <h2>Paprika.onAppear(callback, objectName)</h2>
+        <h2>Paprika.onDisappear(callback, objectName)</h2>
+        <h3>Uses tags: tag_1</h3>
+    
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var exampleFrame = document.getElementById("exampleFrame");
+        var tagText = document.createTextNode('');
+        var tagDiv = document.createElement("div");
+        tagDiv.style.position = "relative";
+        tagDiv.appendChild(tagText);
+        exampleFrame.appendChild(tagDiv);
+        
+        Paprika.start("videoFrame");
+
+        Paprika.onAppear(function(data) {
+            tagDiv.style.left = data.pixelPosX + "px";
+            tagDiv.style.top = data.pixelPosY + "px";
+            
+            tagText.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.pixelPosX + 
+                                "," + data.pixelPosY + ")";
+            
+            exampleFrame.style.backgroundColor = "#55FF55";
+        }, "tag_1");
+        
+        Paprika.onDisappear(function(data) {
+            tagText.nodeValue = "";
+            exampleFrame.style.backgroundColor = "#FF5555";
+        }, "tag_1");
+    </script>
+</body>
+</html>
