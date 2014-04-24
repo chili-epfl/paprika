@@ -13,6 +13,7 @@
         #exampleFrame {
             width: 640px;
             height: 480px;
+            background-color: #AAAABB;
         }
 	</style>
 </head>
@@ -39,18 +40,16 @@
         var tagText = document.createTextNode('');
         var tagDiv = document.createElement("div");
         tagDiv.style.position = "relative";
+        tagDiv.style.left = "310px";
+        tagDiv.style.top = "230px";
         tagDiv.appendChild(tagText);
         exampleFrame.appendChild(tagDiv);
         
         Paprika.start("videoFrame");
 
         Paprika.onAppear(function(data) {
-            tagDiv.style.left = data.pixelPosX + "px";
-            tagDiv.style.top = data.pixelPosY + "px";
             
-            tagText.nodeValue = "\n\n\n" + data.objectName + 
-                                "(" + data.pixelPosX + 
-                                "," + data.pixelPosY + ")";
+            tagText.nodeValue = data.objectName;
             
             exampleFrame.style.backgroundColor = "#55FF55";
         }, "tag_1");

@@ -104,23 +104,8 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    Paprika.onOrient(inputRotate, tagSpaceshipW,            0, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW, 0.25*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW, 0.5 *Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW, 0.75*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW,      Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW, 1.25*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW, 1.5 *Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipW, 1.75*Math.PI, 0.1*Math.PI);
-    
-    Paprika.onOrient(inputRotate, tagSpaceshipB,            0, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB, 0.25*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB, 0.5 *Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB, 0.75*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB,      Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB, 1.25*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB, 1.5 *Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagSpaceshipB, 1.75*Math.PI, 0.1*Math.PI);
+    Paprika.onRotationUpdate(inputRotate, tagSpaceshipW, "z");
+    Paprika.onRotationUpdate(inputRotate, tagSpaceshipB, "z");
     
     // mode switching logic
     Paprika.onAppear( function() {
@@ -243,7 +228,7 @@ function onGameRender() {
 function inputRotate(e) {
     //console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
     
-    orientation = e.goalOrientation;
+    orientation = e.rotation;
 }
     
 function newSpaceship(x, y) {
