@@ -271,6 +271,49 @@ var Paprika = Paprika || ( function () {
         }
         requestAnimationFrame(loop);
     }
+    
+    // helper functions
+    
+    var getPixelPosition = function(transformation) {
+        // format the transformationMatrix into a THREE.Matrix4
+        var transformationMatrix = new THREE.Matrix4();
+        transformationMatrix.set.apply(transformationMatrix, transformation);
+
+        var widthHalf = 320, heightHalf = 240;
+
+        var vector = new THREE.Vector3();
+        var projector = new THREE.Projector();
+        projector.projectVector( vector.setFromMatrixPosition( transformationMatrix ), camera );
+
+        var pixelPosX = Math.round(( vector.x * widthHalf ) + widthHalf);
+        var pixelPosY = Math.round(- ( vector.y * heightHalf ) + heightHalf);
+        
+        return { x:pixelPosX, y:pixelPosY };
+    }
+    
+    var getRotation = function(transformation, axis) {
+        // format the transformationMatrix into a THREE.Matrix4
+        var transformationMatrix = new THREE.Matrix4();
+        transformationMatrix.set.apply(transformationMatrix, transformation);
+        
+        // compute the euler angles of the transformation, with Z as axis of
+        // the first rotation, so that we can ignore rotation on X and Y.
+        var angles = new THREE.Euler();
+        angles.setFromRotationMatrix(transformationMatrix);
+        
+        switch(axis) {
+            case "x":
+                return angles.x;
+                break;
+            case "y":
+                angles.reorder('YZX');
+                return angles.y;
+                break;
+            case "z":
+                angles.reorder('ZXY');
+                return angles.z;
+        }
+    }
 
     return {
 
@@ -321,6 +364,45 @@ var Paprika = Paprika || ( function () {
         onUpdate : function(callback) {
             updateCallbacks.push(callback);
         },
+        
+        // registers a function to call for every frame where `objectName` has been detected
+        onRotationUpdate : function(callback, objectName, axis) {
+            var trigger = function(transformation) {
+                var rotation = getRotation(transformation, axis);
+
+                callback({
+                    objectName:objectName,
+                    transformation:transformation,
+                    rotation:rotation
+                    });
+            };
+            
+            // we add this trigger to the list of callbacks related to `objectName`
+            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+            else objectCallbacks[objectName] = [trigger];
+            
+            return trigger;
+        },
+        
+        // registers a function to call for every frame where `objectName` has been detected
+        onPositionUpdate : function(callback, objectName, axis) {
+            var trigger = function(transformation) {
+                var position = getPixelPosition(transformation);
+
+                callback({
+                    objectName:objectName,
+                    transformation:transformation,
+                    pixelPositionX:position.x,
+                    pixelPositionY:position.y
+                    });
+            };
+            
+            // we add this trigger to the list of callbacks related to `objectName`
+            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+            else objectCallbacks[objectName] = [trigger];
+            
+            return trigger;
+        },
 
         // registers a `callback`function to call when `objectName` has entered the view
         onAppear : function(callback, objectName) {
@@ -335,23 +417,10 @@ var Paprika = Paprika || ( function () {
                 // detect if entered
                 if(!wasPresent && isPresent) {
                     var transformation = objects[objectName];
-                    var transformationMatrix = new THREE.Matrix4();
-                    transformationMatrix.set.apply(transformationMatrix, transformation);
-                    
-                    var widthHalf = 320, heightHalf = 240;
-
-                    var vector = new THREE.Vector3();
-                    var projector = new THREE.Projector();
-                    projector.projectVector( vector.setFromMatrixPosition( transformationMatrix ), camera );
-
-                    var pixelPosX = Math.round(( vector.x * widthHalf ) + widthHalf);
-                    var pixelPosY = Math.round(- ( vector.y * heightHalf ) + heightHalf);
                     
                     callback({ 
                         objectName:objectName,
-                        transformation:transformation,
-                        pixelPosX:pixelPosX,
-                        pixelPosY:pixelPosY,
+                        transformation:transformation
                         });
                 }
                 // save current visibility
@@ -398,15 +467,8 @@ var Paprika = Paprika || ( function () {
             // the logic computing whether or not calling `callback` when an object's
             // transformation matrix has been updated
             var trigger = function(transformation) {
-                // format the transformationMatrix into a THREE.Matrix4
-                var transformationMatrix = new THREE.Matrix4();
-                transformationMatrix.set.apply(transformationMatrix, transformation);
-
-                // compute the euler angles of the transformation, with Z as axis of
-                // the first rotation, so that we can ignore rotation on X and Y.
-                var angles = new THREE.Euler();
-                angles.setFromRotationMatrix(transformationMatrix).reorder('ZXY');
-                var orientation = angles.z;
+                // compute the euler angles of the transformation
+                var zRotation = getRotation(transformation, "z");
 
                 // initialisation of previousOrientation
                 if (previousOrientation === undefined) {
@@ -415,7 +477,7 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        orientation:orientation,
+                        orientation:zRotation,
                         delta:0});
                 }
 
