@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #exampleFrame {
+            width: 640px;
+            height: 480px;
+            background-color: #AAAABB;
+        }
+	</style>
+</head>
+
+<body>
+        <h1>Paprika examples</h1>
+        <h2>Paprika.onRotate(callback, objectName, minDelta)</h2>
+        <h3>Uses tags: tag_1</h3>
+    
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var exampleFrame = document.getElementById("exampleFrame");
+        var tagText = document.createTextNode('');
+        var tagDiv = document.createElement("div");
+        tagDiv.style.position = "relative";
+        tagDiv.style.left = "300px";
+        tagDiv.style.top = "220px";
+        tagDiv.appendChild(tagText);
+        exampleFrame.appendChild(tagDiv);
+        
+        var even = true;
+        var updateDiv = function(data) {
+            var d = Math.round(180 * data.delta / Math.PI);
+            tagText.nodeValue = "Rotated by " + d + "°" + " > 60°";
+            
+            exampleFrame.style.backgroundColor = even ? "#55FF55" : "#FF5555";
+            even = !even;
+        }
+        
+        Paprika.start("videoFrame");
+        Paprika.onRotate(updateDiv, "tag_1", 0.33*Math.PI);
+    </script>
+</body>
+</html>
