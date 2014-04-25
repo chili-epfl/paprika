@@ -38,7 +38,11 @@
         var exampleFrame = document.getElementById("exampleFrame");
         var tagText = document.createTextNode('');
         var tagDiv = document.createElement("div");
+        tagDiv.style.textAlign = "center";
         tagDiv.style.position = "relative";
+        tagDiv.style.height = "20px";
+        tagDiv.style.width = "120px";
+        tagDiv.style.backgroundColor= "#55FF55";
         tagDiv.appendChild(tagText);
         exampleFrame.appendChild(tagDiv);
         
