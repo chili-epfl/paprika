@@ -468,7 +468,7 @@ var Paprika = Paprika || ( function () {
             // transformation matrix has been updated
             var trigger = function(transformation) {
                 // compute the euler angles of the transformation
-                var zRotation = getRotation(transformation, "z");
+                var orientation = getRotation(transformation, "z");
 
                 // initialisation of previousOrientation
                 if (previousOrientation === undefined) {
@@ -477,15 +477,15 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        orientation:zRotation,
+                        orientation:orientation,
                         delta:0});
                 }
 
                 // computing the rotation since `previousOrientation`,
                 // and normalizing in ]-Math.PI, Math.PI]
                 var delta = orientation-previousOrientation;
-                if (delta > Math.PI) delta = 2*Math.PI-delta;
-                if (delta <= -Math.PI) delta = 2*Math.PI-delta;
+                while (delta >   Math.PI) delta -= 2*Math.PI;
+                while (delta <= -Math.PI) delta += 2*Math.PI;
 
                 // if the rotation is beyond the minDelta threshold, call the callback
                 // and reset the reference orientation (previousOrientation)
@@ -524,20 +524,19 @@ var Paprika = Paprika || ( function () {
 
             // same as onRotate...
             var trigger = function(transformation) {
-                var transformationMatrix = new THREE.Matrix4();
-                transformationMatrix.set.apply(transformationMatrix, transformation);
-                var euler = new THREE.Euler().setFromRotationMatrix(transformationMatrix);
-                euler.reorder('ZXY');
+                // compute the euler angles of the transformation
+                var orientation = getRotation(transformation, "z");
 
                 // ... but this time we compare the current orientation with the target
                 // one if the object is not yet oriented as expected, or with the
                 // orientation it had when it was deemed close enough form the target
-                var orientation = euler.z;
                 var delta = Math.abs(
                     (isIn?triggeringOrientation:goalOrientation)-orientation);
 
-                while (delta < 0) delta += 2*Math.PI;
                 while (delta >= 2*Math.PI) delta -= 2*Math.PI;
+                while (delta <          0) delta += 2*Math.PI;
+                
+                // delta is a distance between two angles
                 if (delta > Math.PI) delta = 2*Math.PI-delta;
 
                 // if the object is oriented as expected but wasn't before, or vice
