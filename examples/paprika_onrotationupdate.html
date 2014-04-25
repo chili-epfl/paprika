@@ -20,7 +20,7 @@
 
 <body>
         <h1>Paprika examples</h1>
-        <h2>Paprika.onPositionUpdate(callback, objectName)</h2>
+        <h2>Paprika.onRotationUpdate(callback, objectName, axis)</h2>
         <h3>Uses tags: tag_1</h3>
     
     <div id="leftColumn">
@@ -38,11 +38,13 @@
         var exampleFrame = document.getElementById("exampleFrame");
         var tagText = document.createTextNode('');
         var tagDiv = document.createElement("div");
+        tagDiv.style.textAlign = "center";
         tagDiv.style.position = "relative";
-        tagDiv.style.left = "310px";
         tagDiv.style.top = "230px";
+        tagDiv.style.left = "80px";
         tagDiv.style.height = "20px";
-        tagDiv.style.width = "40px";
+        tagDiv.style.width = "480px";
+        tagDiv.style.backgroundColor= "#55FF55";
         tagDiv.appendChild(tagText);
         exampleFrame.appendChild(tagDiv);
         
