@@ -314,6 +314,23 @@ var Paprika = Paprika || ( function () {
                 return angles.z;
         }
     }
+    
+    var getAngleToCamera = function(transformation) {
+        // format the transformationMatrix into a THREE.Matrix4
+        var transformationMatrix = new THREE.Matrix4();
+        transformationMatrix.set.apply(transformationMatrix, transformation);
+        
+        // extract the rotation components
+        var rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.extractRotation(transformationMatrix);
+
+        var normal = new THREE.Vector3(0, 0, -1);
+        var objectNormal = new THREE.Vector3(0, 0, -1);
+        
+        // apply rotation to 
+        objectNormal.applyMatrix4(rotationMatrix);
+        return objectNormal.angleTo(normal);
+    }
 
     return {
 
@@ -394,6 +411,25 @@ var Paprika = Paprika || ( function () {
                     transformation:transformation,
                     pixelPositionX:position.x,
                     pixelPositionY:position.y
+                    });
+            };
+            
+            // we add this trigger to the list of callbacks related to `objectName`
+            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+            else objectCallbacks[objectName] = [trigger];
+            
+            return trigger;
+        },
+        
+        //registers a function to call for every frame where `objectName` has been deected
+        onAngleToCameraUpdate : function(callback, objectName) {
+            var trigger = function(transformation) {
+                var angleToCamera = getAngleToCamera(transformation);
+                
+                callback({
+                    objectName:objectName,
+                    transformation:transformation,
+                    angleToCamera:angleToCamera
                     });
             };
             
@@ -557,6 +593,54 @@ var Paprika = Paprika || ( function () {
                 }
             };
             trigger.reset = function() { isIn = false; }
+
+            // we add this trigger to the list of callbacks related to `objectName`
+            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+            else objectCallbacks[objectName] = [trigger];
+
+            return trigger;
+        },
+
+        // registers a `callback` function to call when `objectName` has been flipped
+        // by roughly pi radians
+        onFlip : function(callback, objectName) {
+
+            // stores the initial orientation to compare against
+            var previouslyFacing = undefined;
+
+            // the logic computing whether or not calling `callback` when an object's
+            // transformation matrix has been updated
+            var trigger = function(transformation) {
+                // compute the euler angles of the transformation
+                var angleToCamera = getAngleToCamera(transformation);
+                var facing = angleToCamera < 0.5 * Math.PI;
+
+                // initialisation of previousOrientation
+                if (previouslyFacing === undefined) {
+                    previouslyFacing = facing;
+
+                    callback({
+                        objectName:objectName,
+                        transformation:transformation,
+                        angleToCamera:angleToCamera,
+                        facing:facing});
+                }
+
+                // if the object has changed orientation with respect to the camera,
+                // call the callback and reset the reference orientation (previouslyFacing)
+                if (facing !== previouslyFacing) {
+                    callback({
+                        objectName:objectName,
+                        transformation:transformation,
+                        angleToCamera:angleToCamera,
+                        facing:facing});
+                    
+                    previouslyFacing = facing;
+                }
+            };
+            trigger.reset = function() {
+                previouslyFacing = undefined;
+            }
 
             // we add this trigger to the list of callbacks related to `objectName`
             if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
