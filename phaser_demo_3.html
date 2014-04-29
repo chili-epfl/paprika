@@ -52,6 +52,7 @@ var laserGroup;
 var shotDelay = 300;
 var firingTime = 0;
 var laserSpeed = 400;
+var explosionGroup;
 
 var asteroidGroup;
 var totalAsteroids = 30;
@@ -132,6 +133,7 @@ function onGamePreload() {
 	game.load.spritesheet("asteroid_s", "img/asteroids_small.png", 32, 32);
 	game.load.spritesheet("asteroid_l", "img/asteroids_large.png", 64, 32);
     game.load.spritesheet("laser", "img/asteroids_laser.png", 1, 16);
+    game.load.spritesheet("explosion", "img/asteroids_explosion.png", 64, 64);
 }
 
 function onGameCreate() {
@@ -147,6 +149,7 @@ function onGameCreate() {
 	spaceship = newSpaceship(0.5 * game.width,0.5 * game.height);
     
     initLasers();
+    initExplosions();
     initAsteroids();
     
     initPaprikaEvents();
@@ -165,9 +168,15 @@ function onGameCreate() {
 function resetGame() {
     game.time.events.remove(spawnAsteroidsEvent);
     
+    spaceship.revive();
+    
     laserGroup.callAll('kill',this);
     laserGroup.destroy();
     initLasers();
+    
+    explosionGroup.callAll('kill',this);
+    explosionGroup.destroy();
+    initExplosions();
     
     asteroidGroup.callAll('kill',this);
     asteroidGroup.destroy();
@@ -267,8 +276,22 @@ function initLasers() {
     laserGroup.callAll('animations.add', 'animations', 'B', [1], false);
 }
     
+function initExplosions() {
+    explosionGroup = game.add.group();
+    explosionGroup.createMultiple(30, 'explosion');
+    explosionGroup.setAll('anchor.x', 0.5);
+    explosionGroup.setAll('anchor.y', 0.5);
+    explosionGroup.callAll('animations.add', 'animations', 'explode');
+}
+    
+function explodeAt(x,y) {
+    var explosion = explosionGroup.getFirstExists(false);
+    explosion.reset(x, y);
+    explosion.play('explode', 15, false, true);
+}
+    
 function shootLaser() {
-    if (game.time.now > firingTime)
+    if (game.time.now > firingTime && spaceship.alive)
     {
         //  Grab the first laser we can from the pool
         var laser = laserGroup.getFirstExists(false);
@@ -369,6 +392,8 @@ function asteroidDown(laser, asteroid) {
     if(laser.mode == asteroid.mode) {
         laser.kill();
         asteroid.kill();
+        
+        explodeAt(asteroid.x, asteroid.y);
 
         destroyedCount++;
         remainingCount--;
@@ -380,6 +405,10 @@ function spaceshipDown(spaceship, asteroid) {
     
     if(asteroid.mode === spaceship.mode) {
         // spaceship destroyed
+        spaceship.kill();
+        asteroid.kill();
+        
+        explodeAt(spaceship.x, spaceship.y);
     }
 //    resetGame();
 }
