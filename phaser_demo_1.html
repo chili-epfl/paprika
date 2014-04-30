@@ -7,11 +7,12 @@
     <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 	<style>
-		.hidden {
-			display:none;
-		}
-		canvas {
-            float: left;
+        #leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
         }
         #gameFrame {
             float: left;
@@ -24,30 +25,30 @@
 </head>
 
 <body> 
-    <h1>Phaser Orientation Demo</h1>
-    <h2>Evil Crossroads Traffic Management</h2>
-    <p>Try to make the cars crash!
-    <br>Control the active lane at the crossroads with the controller card. (tag #1)
-    <br>Reset the game by showing the reset card. (tag #2)</p>
-    
-    <h2>Downloads</h2>
-    <ul>
-        <li><a target="_blank" href="print/phaser_demo_1.pdf">PDF file with cards.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_1_controller.png">PNG image of controller card.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_1_reset.png">PNG image of reset card.</a></li>
-    </ul>
-    
-	<div id="fps"></div>
-	
-    <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
-    <canvas id="videoCanvas" width="640" height="480"></canvas>
-    <div id="gameFrame"></div>
+    <div id="leftColumn">
+        <h1>Phaser Orientation Demo</h1>
+        <h2>Evil Crossroads Traffic Management</h2>
+        <p>Try to make the cars crash!
+        <br>Control the active lane at the crossroads with the controller card. (tag #1)
+        <br>Reset the game by showing the reset card. (tag #2)</p>
+        <h2>Downloads</h2>
+        <ul>
+            <li><a target="_blank" href="print/phaser_demo_1.pdf">PDF file with cards.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_1_controller.png">PNG image of controller card.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_1_reset.png">PNG image of reset card.</a></li>
+        </ul>
 
-    <script src="js/chilitags.js"></script>
+        <div id="fps"></div>
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="gameFrame"></div>
+    </div>
+
 	<script src="js/three.min.js"></script>
-    <script src="js/paprika.js"></script>
-	
 	<script src="js/phaser.min.js"></script>
+    <script src="js/paprika.js"></script>
 	
 <script>
 // Phaser variables
@@ -55,6 +56,7 @@ var game;
 var trafficLight;
 var lanes, statusUp, statusDown, statusLeft, statusRight;
 var cars, activeLane;
+var carsCollisionGroup;
     
 var orientation = 0;    // angle of control tag in radians
 var updateLanes = false;
@@ -68,13 +70,15 @@ var tagTrafficLight = "tag_1";
 var tagReset = "tag_2";
     
 function initPaprikaEvents() {
+    Paprika.start("videoFrame");
+    
     // chilitags info
     fpsText = document.createTextNode('');
     document.getElementById('fps').appendChild(fpsText);
 
     start = new Date();
 
-    onTagUpdate(function(objects) {
+    Paprika.onUpdate(function(objects) {
         var end = new Date();
 
         var str = 'Objects: ';
@@ -86,13 +90,13 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    onOrient(inputRotate, tagTrafficLight,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLight, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLight,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLight, 1.5*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight,           0, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight, 0.5*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight,     Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight, 1.5*Math.PI, 0.1*Math.PI);
     
     // restart game
-    onAppear(resetGame, tagReset);
+    Paprika.onAppear(resetGame, tagReset);
 }
 
 function onGamePreload() {
@@ -105,8 +109,8 @@ function onGamePreload() {
     game.load.spritesheet("car", "img/car.png", 44, 100);
 }
 
-function onGameCreate() {    
-    var bg = game.add.sprite(0,0, "background");
+function onGameCreate() {
+    var bg = game.add.image(0,0, "background");
 
 	trafficLight = game.add.sprite(game.width/2, game.height/2,"trafficLight");
     trafficLight.anchor.setTo(0.5,0.5);
@@ -126,15 +130,20 @@ function onGameCreate() {
     lanes.callAll('animations.add', 'animations', "isGreen", [0], false);
     lanes.callAll('animations.add', 'animations', "isRed", [1], false);
     
-    cars = game.add.group();
+    //  Enable P2 physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.p2.setImpactEvents(true);
+    carsCollisionGroup = game.physics.p2.createCollisionGroup();
+    
     initCars();
     
     initPaprikaEvents();
 }
 
 function resetGame() {
+    game.physics.p2.clear();
     cars.destroy();
-    cars = game.add.group();
+    
     initCars();
     
     lanes.callAll('animations.play', 'animations', "isRed");
@@ -154,6 +163,7 @@ function inputRotate(e) {
 }
     
 function initCars() {
+    cars = game.add.group();
     newCar(270, 0, 0, statusUp);
     newCar(270, -120, 0, statusUp);
     newCar(270, -240, 0, statusUp);
@@ -170,17 +180,16 @@ function initCars() {
 
 function newCar(x, y, r, l) {
     var car = cars.create(x, y, "car");
-    car.anchor.setTo(0.5, 0.5);
-    car.rotation = r;
+    car.checkWorldBounds = true;
     
     car.lane = l;
     car.active = true; // if still within lane and uncrashed
     
     // bounding box and crash physics
-    car.body.translate(-car.width/2, -car.height/2);
-    car.body.polygon.rotate(car.rotation);
-    car.body.translate(car.width/2, car.height/2);
-    car.body.bounce.setTo(0.9,0.9);
+    game.physics.p2.enable(car, false);
+    car.body.rotation = r;
+    car.body.setCollisionGroup(carsCollisionGroup);
+    car.body.collides(carsCollisionGroup, crashCars, this);
     
     car.events.onOutOfBounds.add(killCar, this);
     
@@ -190,11 +199,11 @@ function newCar(x, y, r, l) {
 }
     
 function crashCars(c1, c2) {
-    c1.animations.play("crashed");
-    c2.animations.play("crashed");
+    c1.sprite.animations.play("crashed");
+    c2.sprite.animations.play("crashed");
     
-    c1.active = false;
-    c2.active = false;
+    c1.sprite.active = false;
+    c2.sprite.active = false;
 }
     
 function killCar(car) {
@@ -205,23 +214,9 @@ function updateCarSpeeds() {
     cars.forEach(function(car) {
         if(car.active){
             if (car.lane == activeLane) {
-                switch(activeLane){
-                    case statusUp:
-                        car.body.velocity.y = carSpeed;
-                        break;
-                    case statusDown:
-                        car.body.velocity.y = -carSpeed;
-                        break;
-                    case statusRight:
-                        car.body.velocity.x = -carSpeed;
-                        break;
-                    case statusLeft:
-                        car.body.velocity.x = carSpeed;
-                        break;
-                }
+                car.body.moveForward(-carSpeed);
             } else {
-                 car.body.velocity.x = 0;
-                 car.body.velocity.y = 0;
+                car.body.setZeroVelocity();
             }
         }
     });
@@ -236,7 +231,6 @@ function updateLane(newLane) {
 }
     
 function onGameUpdate() {
-    
     // check for no longer active cars    
     cars.forEach(function(car) {
         switch(car.lane){
@@ -277,8 +271,6 @@ function onGameUpdate() {
         updateLane(newLane);
         updateCarSpeeds();
     }
-    
-    game.physics.collide(cars, cars, crashCars);
 }
 </script>
 </body>

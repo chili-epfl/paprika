@@ -7,11 +7,12 @@
     <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 	<style>
-		.hidden {
-			display:none;
-		}
-		canvas {
-            float: left;
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
         }
         #gameFrame {
             float: left;
@@ -23,45 +24,41 @@
 	</style>
 </head>
 
-<body> 
-    <div style="float:left; width:660px;">
-        
-    <h1>Phaser Orientation Demo</h1>
-    <h2>Evil Crossroads Traffic Management</h2>
-    <p>Try to make the cars crash!
-    <br>Control the active lanes at the crossroads with the controller cards.
-	<br>(tag #1 for North-West, #3 for North-East, #4 for South-West, #5 for South-East)
-    <br>Reset the game by showing the reset card. (tag #2)</p>
-	
-	<h2>Downloads</h2>
-    <ul>
-        <li><a target="_blank" href="print/phaser_demo_2.pdf">PDF file with cards.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_2_controller_1.png">PNG image of controller card NW.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_2_controller_3.png">PNG image of controller card NE.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_2_controller_4.png">PNG image of controller card SW.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_2_controller_5.png">PNG image of controller card SE.</a></li>
-        <li><a target="_blank" href="print/phaser_demo_1_reset.png">PNG image of reset card.</a></li>
-    </ul>
-	
-	<div id="fps"></div>
-    <video id="inputVideo" class="hidden" autoplay width="640" height="480"></video>
-    <canvas id="videoCanvas" width="640" height="480"></canvas>
-        
+<body>
+    <div id="leftColumn">
+        <h1>Phaser Orientation Demo</h1>
+        <h2>Evil Crossroads Traffic Management</h2>
+        <p>Try to make the cars crash!
+        <br>Control the active lanes at the crossroads with the controller cards. (tags #1, #3, #4, #5)
+        <br>Reset the game by showing the reset card. (tag #2)</p>
+        <h2>Downloads</h2>
+        <ul>
+            <li><a target="_blank" href="print/phaser_demo_2.pdf">PDF file with cards.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_1.png">PNG image of controller card NW.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_3.png">PNG image of controller card NE.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_4.png">PNG image of controller card SW.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_5.png">PNG image of controller card SE.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_1_reset.png">PNG image of reset card.</a></li>
+        </ul>
+
+        <div id="fps"></div>
+        <div id="videoFrame"></div>
     </div>
     
-    <div id="gameFrame"></div>
+    <div id="rightColumn">
+        <div id="gameFrame"></div>
+    </div>
 
-    <script src="js/chilitags.js"></script>
 	<script src="js/three.min.js"></script>
-    <script src="js/paprika.js"></script>
-	
 	<script src="js/phaser.min.js"></script>
+    <script src="js/paprika.js"></script>
 	
 <script>
 // Phaser variables
-var game, cursors;
+var game;
 var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
 var cars, lanes, activeLane;
+var carsCollisionGroup;
 var crashSound, trafficSound;
 
 var orientations = new Object(); // angles of control cards in radians
@@ -72,9 +69,23 @@ orientations.SE = -1;
     
 var updateLanes = false;
 var totalCars = 30;
+var gameStartTime = 10;
 var carBirthTime = 5;
+var crashedLifespan = 2;
 var carSpeed = 100;
 var carSpaceInLane = 120;
+var spawnCarsEvent;
+    
+// score counters
+var successCount = 0;
+var crashedCount = 0;
+var remainingCount = totalCars;
+    
+var startTime, finalTime;
+var startScreenTime = 4;
+var startEndGraphics, startEndText;
+
+var scoreText, timeText;
 
 game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
@@ -85,15 +96,18 @@ var tagTrafficLightNE = "tag_3";
 var tagTrafficLightSW = "tag_4";
 var tagTrafficLightSE = "tag_5";
 var tagReset = "tag_2";
+var paprikaTriggers = [];
     
 function initPaprikaEvents() {
+    Paprika.start("videoFrame");
+    
     // chilitags info
     fpsText = document.createTextNode('');
     document.getElementById('fps').appendChild(fpsText);
 
     start = new Date();
 
-    onTagUpdate(function(objects) {
+    Paprika.onUpdate(function(objects) {
         var end = new Date();
 
         var str = 'Objects: ';
@@ -105,25 +119,25 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightNE, 1.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSW, 1.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE,           0, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE, 0.5*Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE,     Math.PI, 0.1*Math.PI);
-    onOrient(inputRotate, tagTrafficLightSE, 1.5*Math.PI, 0.1*Math.PI);
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNW, 1.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightNE, 1.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSW, 1.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE,           0, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE, 0.5*Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE,     Math.PI, 0.1*Math.PI) );
+    paprikaTriggers.push( Paprika.onOrient(inputRotate, tagTrafficLightSE, 1.5*Math.PI, 0.1*Math.PI) );
     
     // restart game
-    onAppear(resetGame, tagReset);
+    Paprika.onAppear(resetGame, tagReset);
 }
 
 function onGamePreload() {
@@ -139,14 +153,11 @@ function onGamePreload() {
     game.load.audio("traffic", "audio/city_traffic.mp3");
 }
 
-function onGameCreate() {
-    // keyboard input
-	cursors = game.input.keyboard.createCursorKeys();
-    
-    game.add.sprite(  0,   0, "background");
-    game.add.sprite(480,   0, "background");
-    game.add.sprite(  0, 480, "background");
-    game.add.sprite(480, 480, "background");
+function onGameCreate() {    
+    game.add.image(  0,   0, "background");
+    game.add.image(480,   0, "background");
+    game.add.image(  0, 480, "background");
+    game.add.image(480, 480, "background");
     
     crashSound = game.add.audio("crash");
     trafficSound = game.add.audio("traffic");
@@ -157,32 +168,81 @@ function onGameCreate() {
 	trafficLightSW = newTrafficLight(      320, 480 + 240);
 	trafficLightSE = newTrafficLight(480 + 320, 480 + 240);
     
-    lanes = game.add.group();
     initLanes();
     
-    cars = game.add.group();
+    //  Enable P2 physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.p2.setImpactEvents(true);
+    carsCollisionGroup = game.physics.p2.createCollisionGroup();
+    
     initCars();
     
     initPaprikaEvents();
+    
+    scoreText = game.add.text(10, 10, "", { font: "24px Impact", fill: "#ffffff", align: "left" });
+    timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Impact", fill: "#ffffff", align: "center" });
+    
+    startEndGraphics = game.add.graphics(0, 0);
+    startEndGraphics.beginFill(0x000000);
+    startEndGraphics.drawRect(0, 0, game.width, game.height);
+    startEndText = game.add.text(180, 150 + 0.25 * game.height, "", { font: "58px Impact", fill: "#ffffff", align: "center" });
+    
+    startScreen();
 }
 
 function resetGame() {
+    game.physics.p2.clear();
+    game.time.events.remove(spawnCarsEvent);
+    
     resetLights();
     resetLanes();
     
     cars.destroy();
-    cars = game.add.group();
     initCars();
     
     updateLanes = false;
+    
+    successCount = 0;
+    crashedCount = 0;
+    remainingCount = totalCars;
+    
+    startScreen();
+    
+    paprikaTriggers.forEach(function(trigger) {
+        trigger.reset();
+    });
+}
+
+function startScreen() {
+    startTime = game.time.now;
+    finalTime = Number.MAX_VALUE;
+    
+    startEndGraphics.alpha = 0.5;
+    
+    game.time.events.repeat(Phaser.Timer.SECOND, startScreenTime, function() {
+        startEndText.setText("Crossroads Traffic Management \nwill start in:\n" +
+                            Math.round(startScreenTime - game.time.elapsedSecondsSince(startTime)));
+    }, this);
+    
+    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() {
+        startEndGraphics.alpha = 0;
+        startEndText.setText("");
+    }, this);
+}
+
+function endScreen() {
+    finalTime = Math.min(finalTime, Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
+    
+    startEndGraphics.alpha = 0.5;
+    startEndText.setText("Score: " + (successCount - crashedCount) +
+                      "\n(" + successCount + " - " + crashedCount + ")" +
+                      "\nTime: " + finalTime + " sec.");
 }
 
 function onGameRender() {
     // phaser debug information
     // only visible when game is run with Phaser.CANVAS
-    game.debug.renderCameraInfo(game.camera, 32, 32);
-    cars.forEach(function(car) { game.debug.renderSpriteBody(car); }); // display cars bounding box
-
+//    cars.forEach(function(car) { game.debug.spriteBounds(car); }); // display cars bounding box
 }
     
 // game logic
@@ -229,6 +289,8 @@ function resetLights() {
 }
 
 function initLanes(){
+    lanes = game.add.group();
+    
     trafficLightNW.laneUp    = newLane(240,  84, 1.5*Math.PI); // going down
     trafficLightNW.laneLeft  = newLane(164, 320,     Math.PI); // going right
     trafficLightNW.laneDown  = newLane(400, 396, 0.5*Math.PI); // going up
@@ -285,6 +347,8 @@ function resetLanes() {
 }
     
 function initCars() {
+    cars = game.add.group();
+    
     newCar(       270,    0, 0, trafficLightNW.laneUp);
     newCar( 480 + 270,    0, 0, trafficLightNE.laneUp);
     
@@ -297,13 +361,15 @@ function initCars() {
     newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
     
-    game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
+     // wait before spawning cars
+    spawnCarsEvent = game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
+        spawnCarsEvent = game.time.events.repeat(Phaser.Timer.SECOND * carBirthTime, totalCars - 8, randomCar, this);
+    }, this);
 }
 
 function newCar(x, y, r, l) {
     var car = cars.create(x, y, "car");
-    car.anchor.setTo(0.5, 0.5);
-    car.rotation = r;
+    car.checkWorldBounds = true;
     
     car.lane = l;
     l.cars += 1;
@@ -312,12 +378,13 @@ function newCar(x, y, r, l) {
     car.crashed = false;
     
     // bounding box and crash physics
-    car.body.translate(-car.width/2, -car.height/2);
-    car.body.polygon.rotate(car.rotation);
-    car.body.translate(car.width/2, car.height/2);
-    car.body.bounce.setTo(0.9,0.9);
+    game.physics.p2.enable(car, false);
+    car.body.rotation = r;
+    car.body.setCollisionGroup(carsCollisionGroup);
+    car.body.collides(carsCollisionGroup, crashCars, this);
+    car.body.setZeroDamping();
     
-    car.events.onOutOfBounds.add(killCar, this);
+    car.events.onOutOfBounds.add(successfulCarKill, this);
     
     car.animations.add("ok", [0], false);
     car.animations.add("crashed", [1], false);
@@ -365,7 +432,7 @@ function randomCar(){
 function carHasLeftLane(car) {
     if(car.lane == null) return true; // shouldn't trigger
     
-    switch(car.rotation){
+    switch(car.body.rotation){
             case 0: // going down
                 return car.y - 0.5*car.height > car.lane.y;
                 break;
@@ -384,7 +451,7 @@ function carHasLeftLane(car) {
 function carHasEnteredNextLane(car) {
     if(car.lane.nextLane == null) return false; // shouldn't trigger
     
-    switch(car.rotation){
+    switch(car.body.rotation){
             case 0: // going down
                 return car.y > car.lane.nextLane.y - car.lane.nextLane.cars * carSpaceInLane - car.lane.height;
                 break;
@@ -401,26 +468,35 @@ function carHasEnteredNextLane(car) {
 }
     
 function crashCars(c1, c2) {
-    if(!c1.crashed || !c2.crashed) crashSound.play();
+    if(!c1.sprite.crashed || !c2.sprite.crashed) crashSound.play();
     
-    if(!c1.crashed) crashCar(c1);
-    if(!c1.crashed) crashCar(c2);
+    if(!c1.sprite.crashed) crashCar(c1.sprite);
+    if(!c1.sprite.crashed) crashCar(c2.sprite);
 }
 
 function crashCar(c) {
+    c.body.damping = 0.5;
     c.animations.play("crashed");
 
     var t = game.add.tween(c);
-    t.to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None);
-    t.onComplete.addOnce(function() { killCar(c); }, this);
+    t.to({ alpha: 0 }, Phaser.Timer.SECOND * crashedLifespan, Phaser.Easing.Linear.None);
+    t.onComplete.addOnce(function() { c.kill(); }, this);
     t.start();
 
     c.crashed = true;
     if(c.active && c.lane != null) c.lane.cars -=1;
+    
+    crashedCount++;
+    remainingCount--;
 }
     
-function killCar(car) {
-    if(!car.active) car.kill();
+function successfulCarKill(car) {
+    if(!car.active) {
+        car.kill();
+    
+        successCount++;
+        remainingCount--;
+    }
 }
     
 function updateCarLanes() {
@@ -444,11 +520,9 @@ function updateCarSpeeds() {
         // only update speeds of active uncrashed cars
         if(!car.crashed && car.active) {
             if(car.lane != null && car.lane.active) {
-                car.body.velocity.x = - Math.sin(car.rotation) * carSpeed;
-                car.body.velocity.y =   Math.cos(car.rotation) * carSpeed;
+                car.body.moveForward(-carSpeed);
             } else {
-                car.body.velocity.x = 0;
-                car.body.velocity.y = 0;
+                car.body.setZeroVelocity();
             }
         }
     });
@@ -488,9 +562,18 @@ function updateLightStatus(light, newOrientation) {
     }
     light.rotation = newOrientation;
 }
+
+function updateScore() {
+    scoreText.setText("Remaining: " + remainingCount +
+                      "\nSuccessful: " + successCount +
+                      "\nCrashed: " + crashedCount);
+    
+    timeText.setText("Time:\n" + Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
+    
+    if(remainingCount == 0 || successCount + crashedCount == totalCars) endScreen();
+}
     
 function onGameUpdate() {
-
     // update lanes when required
     if(updateLanes) {
         updateLightStatus(trafficLightNW, orientations.NW);
@@ -504,8 +587,7 @@ function onGameUpdate() {
     // update cars
     updateCarLanes();
     updateCarSpeeds();
-    
-    game.physics.collide(cars, cars, crashCars);
+    updateScore();
 }
 </script>
 </body>
