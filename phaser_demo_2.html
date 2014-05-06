@@ -60,8 +60,8 @@ var totalCars = 30;
 var gameStartTime = 10;
 var carBirthTime = 5;
 var crashedLifespan = 2;
-var carSpeed = 100;
-var carSpaceInLane = 120;
+var carSpeed = 60;
+var carSpaceInLane = 75;
 var spawnCarsEvent;
     
 // score counters
@@ -75,7 +75,7 @@ var startEndGraphics, startEndText;
 
 var scoreText, timeText;
 
-game = new Phaser.Game(1120,960,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+game = new Phaser.Game(600,600,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
 // chilitags variables
 var fpsText, start;
@@ -133,9 +133,9 @@ function onGamePreload() {
 	game.stage.backgroundColor = '#00FF00';
     
     game.load.image("background", "img/crossroad.png");
-	game.load.image("trafficLight", "img/trafficLight.png");
-    game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
-    game.load.spritesheet("car", "img/car.png", 44, 100);
+	game.load.spritesheet("trafficLight", "img/trafficLight.png", 64, 64);
+    game.load.spritesheet("lightStatus", "img/lightStatus.png", 12, 12);
+    game.load.spritesheet("car", "img/car.png", 32, 64);
     
     game.load.audio("crash", "audio/crash_glass_short.wav");
     game.load.audio("traffic", "audio/city_traffic.mp3");
@@ -148,18 +148,18 @@ function onGameCreate() {
     cursors.randomCar.onDown.add(randomCar, this);
     
     game.add.image(  0,   0, "background");
-    game.add.image(480,   0, "background");
-    game.add.image(  0, 480, "background");
-    game.add.image(480, 480, "background");
+    game.add.image(300,   0, "background");
+    game.add.image(  0, 300, "background");
+    game.add.image(300, 300, "background");
     
     crashSound = game.add.audio("crash");
     trafficSound = game.add.audio("traffic");
     trafficSound.play("",0,1,true);
 
-	trafficLightNW = newTrafficLight(      320,       240);
-	trafficLightNE = newTrafficLight(480 + 320,       240);
-	trafficLightSW = newTrafficLight(      320, 480 + 240);
-	trafficLightSE = newTrafficLight(480 + 320, 480 + 240);
+	trafficLightNW = newTrafficLight(      150,       150);
+	trafficLightNE = newTrafficLight(300 + 150,       150);
+	trafficLightSW = newTrafficLight(      150, 300 + 150);
+	trafficLightSE = newTrafficLight(300 + 150, 300 + 150);
     
     initLanes();
     
@@ -172,23 +172,27 @@ function onGameCreate() {
     
     initPaprikaEvents();
     
-    scoreText = game.add.text(10, 10, "", { font: "24px Impact", fill: "#ffffff", align: "left" });
-    timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Impact", fill: "#ffffff", align: "center" });
+    scoreText = game.add.text(5, 5, "", { font: "12px Impact", fill: "#ffffff", align: "left" });
+    timeText = game.add.text(0.5 * game.width, 5, "", { font: "16px Impact", fill: "#ffffff", align: "center" });
     
     startEndGraphics = game.add.graphics(0, 0);
     startEndGraphics.beginFill(0x000000);
     startEndGraphics.drawRect(0, 0, game.width, game.height);
-    startEndText = game.add.text(180, 150 + 0.25 * game.height, "", { font: "58px Impact", fill: "#ffffff", align: "center" });
+    startEndText = game.add.text(90, 100 + 0.25 * game.height, "", { font: "32px Impact", fill: "#ffffff", align: "center" });
     
     startScreen();
 }
 
 function resetGame() {
-    game.physics.p2.clear();
     game.time.events.remove(spawnCarsEvent);
     
     resetLights();
     resetLanes();
+    
+    
+    game.physics.p2.clear();
+    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.p2.setImpactEvents(true);
     
     cars.destroy();
     initCars();
@@ -245,15 +249,19 @@ function inputRotate(e) {
     
     switch(e.objectName){
         case tagTrafficLightNW:
+            trafficLightNW.animations.play("started");
             orientations.NW = e.goalOrientation;
             break;
         case tagTrafficLightNE:
+            trafficLightNE.animations.play("started");
             orientations.NE = e.goalOrientation;
             break;
         case tagTrafficLightSW:
+            trafficLightSW.animations.play("started");
             orientations.SW = e.goalOrientation;
             break;
         case tagTrafficLightSE:
+            trafficLightSE.animations.play("started");
             orientations.SE = e.goalOrientation;
             break;
     }
@@ -263,7 +271,10 @@ function inputRotate(e) {
     
 function newTrafficLight(x, y) {
     var light = game.add.sprite(x, y, "trafficLight");
-    light.anchor.setTo(0.5, 0.5);
+    light.animations.add("default", [0], false);
+    light.animations.add("started", [1], false);
+    light.animations.play("default");
+    light.anchor.setTo(0.5,0.5);
     
     return light;
 }
@@ -285,25 +296,25 @@ function resetLights() {
 function initLanes(){
     lanes = game.add.group();
     
-    trafficLightNW.laneUp    = newLane(240,  84, 1.5*Math.PI); // going down
-    trafficLightNW.laneLeft  = newLane(164, 320,     Math.PI); // going right
-    trafficLightNW.laneDown  = newLane(400, 396, 0.5*Math.PI); // going up
-    trafficLightNW.laneRight = newLane(476, 160,           0); // going left
+    trafficLightNW.laneUp    = newLane(92,  84, 1.5*Math.PI); // going down
+    trafficLightNW.laneLeft  = newLane(84, 208,     Math.PI); // going right
+    trafficLightNW.laneDown  = newLane(208, 216, 0.5*Math.PI); // going up
+    trafficLightNW.laneRight = newLane(216, 92,           0); // going left
     
-    trafficLightNE.laneUp    = newLane(480 + 240,  84, 1.5*Math.PI); // going down
-    trafficLightNE.laneLeft  = newLane(480 + 164, 320,     Math.PI); // going right
-    trafficLightNE.laneDown  = newLane(480 + 400, 396, 0.5*Math.PI); // going up
-    trafficLightNE.laneRight = newLane(480 + 476, 160,           0); // going left
+    trafficLightNE.laneUp    = newLane(300 + 92,  84, 1.5*Math.PI); // going down
+    trafficLightNE.laneLeft  = newLane(300 + 84, 208,     Math.PI); // going right
+    trafficLightNE.laneDown  = newLane(300 + 208, 216, 0.5*Math.PI); // going up
+    trafficLightNE.laneRight = newLane(300 + 216, 92,           0); // going left
     
-    trafficLightSW.laneUp    = newLane(240, 480 +  84, 1.5*Math.PI); // going down
-    trafficLightSW.laneLeft  = newLane(164, 480 + 320,     Math.PI); // going right
-    trafficLightSW.laneDown  = newLane(400, 480 + 396, 0.5*Math.PI); // going up
-    trafficLightSW.laneRight = newLane(476, 480 + 160,           0); // going left
+    trafficLightSW.laneUp    = newLane(92, 300 +  84, 1.5*Math.PI); // going down
+    trafficLightSW.laneLeft  = newLane(84, 300 + 208,     Math.PI); // going right
+    trafficLightSW.laneDown  = newLane(208, 300 + 216, 0.5*Math.PI); // going up
+    trafficLightSW.laneRight = newLane(216, 300 + 92,           0); // going left
     
-    trafficLightSE.laneUp    = newLane(480 + 240, 480 +  84, 1.5*Math.PI); // going down
-    trafficLightSE.laneLeft  = newLane(480 + 164, 480 + 320,     Math.PI); // going right
-    trafficLightSE.laneDown  = newLane(480 + 400, 480 + 396, 0.5*Math.PI); // going up
-    trafficLightSE.laneRight = newLane(480 + 476, 480 + 160,           0); // going left
+    trafficLightSE.laneUp    = newLane(300 + 92, 300 +  84, 1.5*Math.PI); // going down
+    trafficLightSE.laneLeft  = newLane(300 + 84, 300 + 208,     Math.PI); // going right
+    trafficLightSE.laneDown  = newLane(300 + 208, 300 + 216, 0.5*Math.PI); // going up
+    trafficLightSE.laneRight = newLane(300 + 216, 300 + 92,           0); // going left
     
     trafficLightNW.laneUp.nextLane   = trafficLightSW.laneUp;
     trafficLightNW.laneLeft.nextLane = trafficLightNE.laneLeft;
@@ -343,17 +354,14 @@ function resetLanes() {
 function initCars() {
     cars = game.add.group();
     
-    newCar(       270,    0, 0, trafficLightNW.laneUp);
-    newCar( 480 + 270,    0, 0, trafficLightNE.laneUp);
-    
-    newCar(  50,       290, 1.5*Math.PI, trafficLightNW.laneLeft);
-    newCar(  50, 480 + 290, 1.5*Math.PI, trafficLightSW.laneLeft);
-    
-    newCar(       370, 480 + 480, Math.PI, trafficLightSW.laneDown);
-    newCar( 480 + 370, 480 + 480, Math.PI, trafficLightSE.laneDown);
-    
-    newCar( 480 + 590,       190, 0.5*Math.PI, trafficLightNE.laneRight);
-    newCar( 480 + 590, 480 + 190, 0.5*Math.PI, trafficLightSE.laneRight);
+    newCar(       115,         0, 0, trafficLightNW.laneUp);
+    newCar( 300 + 115,         0, 0, trafficLightNE.laneUp);
+    newCar(         0,       185, 1.5*Math.PI, trafficLightNW.laneLeft);
+    newCar(         0, 300 + 185, 1.5*Math.PI, trafficLightSW.laneLeft);
+    newCar(       115, 300 + 300, Math.PI, trafficLightSW.laneDown);
+    newCar( 300 + 115, 300 + 300, Math.PI, trafficLightSE.laneDown);
+    newCar( 300 + 300,       115, 0.5*Math.PI, trafficLightNE.laneRight);
+    newCar( 300 + 300, 300 + 115, 0.5*Math.PI, trafficLightSE.laneRight);
     
      // wait before spawning cars
     spawnCarsEvent = game.time.events.add(Phaser.Timer.SECOND * gameStartTime, function() { 
@@ -391,35 +399,43 @@ function newCar(x, y, r, l) {
 function randomCar(){
     switch(game.rnd.integerInRange(1, 8)){
         case 1:
-            newCar(270, - trafficLightNW.laneUp.cars * carSpaceInLane,
+            newCar(115,
+                   0 - trafficLightNW.laneUp.cars * carSpaceInLane,
                    0, trafficLightNW.laneUp);
             break;
         case 2:
-            newCar(480 + 270, - trafficLightNE.laneUp.cars * carSpaceInLane,
+            newCar(300 + 115,
+                   0 - trafficLightNE.laneUp.cars * carSpaceInLane,
                    0, trafficLightNE.laneUp);
             break;
         case 3:
-            newCar(50 - trafficLightNW.laneLeft.cars * carSpaceInLane, 290,
+            newCar(0 - trafficLightNW.laneLeft.cars * carSpaceInLane,
+                   185,
                    1.5*Math.PI, trafficLightNW.laneLeft);
             break;
         case 4:
-            newCar(50 - trafficLightSW.laneLeft.cars * carSpaceInLane, 480 + 290,
+            newCar(0 - trafficLightSW.laneLeft.cars * carSpaceInLane,
+                   300 + 185,
                    1.5*Math.PI, trafficLightSW.laneLeft);
             break;
         case 5:
-            newCar(370, 480 + 480 + trafficLightSW.laneDown.cars * carSpaceInLane,
+            newCar(185,
+                   300 + 300 + trafficLightSW.laneDown.cars * carSpaceInLane,
                    Math.PI, trafficLightSW.laneDown);
             break;
         case 6:
-            newCar( 480 + 370, 480 + 480 + trafficLightSE.laneDown.cars * carSpaceInLane,
+            newCar( 300 + 185,
+                   300 + 300 + trafficLightSE.laneDown.cars * carSpaceInLane,
                    Math.PI, trafficLightSE.laneDown);
             break;
         case 7:
-            newCar( 480 + 590 + trafficLightNE.laneRight.cars * carSpaceInLane, 190,
+            newCar( 300 + 300 + trafficLightNE.laneRight.cars * carSpaceInLane,
+                   115,
                    0.5*Math.PI, trafficLightNE.laneRight);
             break;
         case 8:
-            newCar( 480 + 590 + trafficLightNE.laneRight.cars * carSpaceInLane, 480 + 190,
+            newCar( 300 + 300 + trafficLightNE.laneRight.cars * carSpaceInLane,
+                   300 + 115,
                    0.5*Math.PI, trafficLightSE.laneRight);
     }
 }
@@ -429,16 +445,16 @@ function carHasLeftLane(car) {
     
     switch(car.body.rotation){
             case 0: // going down
-                return car.y - 0.5*car.height > car.lane.y;
+                return car.y > car.lane.y;
                 break;
             case 0.5*Math.PI: // going left
-                return car.x + 0.5*car.width < car.lane.x;
+                return car.x < car.lane.x;
                 break;
             case Math.PI: // going up
-                return car.y + 0.5*car.height < car.lane.y;
+                return car.y < car.lane.y;
                 break;
             case 1.5*Math.PI: // going right
-                return car.x - 0.5*car.width > car.lane.x;
+                return car.x > car.lane.x;
         }
     return false;
 }
@@ -448,16 +464,16 @@ function carHasEnteredNextLane(car) {
     
     switch(car.body.rotation){
             case 0: // going down
-                return car.y > car.lane.nextLane.y - car.lane.nextLane.cars * carSpaceInLane - car.lane.height;
+                return car.y > car.lane.nextLane.y - (0.5 + car.lane.nextLane.cars) * carSpaceInLane;
                 break;
             case 0.5*Math.PI: // going left
-                return car.x < car.lane.nextLane.x + car.lane.nextLane.cars * carSpaceInLane + car.lane.width;
+                return car.x < car.lane.nextLane.x + (0.5 + car.lane.nextLane.cars) * carSpaceInLane;
                 break;
             case Math.PI: // going up
-                return car.y < car.lane.nextLane.y + car.lane.nextLane.cars * carSpaceInLane + car.lane.height;
+                return car.y < car.lane.nextLane.y + (0.5 + car.lane.nextLane.cars) * carSpaceInLane;
                 break;
             case 1.5*Math.PI: // going right
-                return car.x > car.lane.nextLane.x - car.lane.nextLane.cars * carSpaceInLane - car.lane.width;
+                return car.x > car.lane.nextLane.x - (0.5 + car.lane.nextLane.cars) * carSpaceInLane;
         }
     return false;
 }
