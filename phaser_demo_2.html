@@ -189,7 +189,6 @@ function resetGame() {
     resetLights();
     resetLanes();
     
-    
     game.physics.p2.clear();
     game.physics.startSystem(Phaser.Physics.P2JS);
     game.physics.p2.setImpactEvents(true);
@@ -240,7 +239,6 @@ function onGameRender() {
     // phaser debug information
     // only visible when game is run with Phaser.CANVAS
 //    cars.forEach(function(car) { game.debug.spriteBounds(car); }); // display cars bounding box
-
 }
     
 // game logic
@@ -358,8 +356,8 @@ function initCars() {
     newCar( 300 + 115,         0, 0, trafficLightNE.laneUp);
     newCar(         0,       185, 1.5*Math.PI, trafficLightNW.laneLeft);
     newCar(         0, 300 + 185, 1.5*Math.PI, trafficLightSW.laneLeft);
-    newCar(       115, 300 + 300, Math.PI, trafficLightSW.laneDown);
-    newCar( 300 + 115, 300 + 300, Math.PI, trafficLightSE.laneDown);
+    newCar(       185, 300 + 300, Math.PI, trafficLightSW.laneDown);
+    newCar( 300 + 185, 300 + 300, Math.PI, trafficLightSE.laneDown);
     newCar( 300 + 300,       115, 0.5*Math.PI, trafficLightNE.laneRight);
     newCar( 300 + 300, 300 + 115, 0.5*Math.PI, trafficLightSE.laneRight);
     
@@ -424,17 +422,17 @@ function randomCar(){
                    Math.PI, trafficLightSW.laneDown);
             break;
         case 6:
-            newCar( 300 + 185,
+            newCar(300 + 185,
                    300 + 300 + trafficLightSE.laneDown.cars * carSpaceInLane,
                    Math.PI, trafficLightSE.laneDown);
             break;
         case 7:
-            newCar( 300 + 300 + trafficLightNE.laneRight.cars * carSpaceInLane,
+            newCar(300 + 300 + trafficLightNE.laneRight.cars * carSpaceInLane,
                    115,
                    0.5*Math.PI, trafficLightNE.laneRight);
             break;
         case 8:
-            newCar( 300 + 300 + trafficLightNE.laneRight.cars * carSpaceInLane,
+            newCar(300 + 300 + trafficLightNE.laneRight.cars * carSpaceInLane,
                    300 + 115,
                    0.5*Math.PI, trafficLightSE.laneRight);
     }
