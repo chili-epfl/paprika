@@ -15,6 +15,8 @@
             float:left;
         }
         #gameFrame {
+            width: 600px;
+            height: 600px;
             float: left;
             image-rendering: optimizeSpeed;
             image-rendering: -moz-crisp-edges;
@@ -60,9 +62,9 @@ var carsCollisionGroup;
     
 var orientation = 0;    // angle of control tag in radians
 var updateLanes = false;
-var carSpeed = 100;
+var carSpeed = 60;
 
-game = new Phaser.Game(640,480,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+game = new Phaser.Game(300,300,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
 // chilitags variables
 var fpsText, start;
@@ -102,28 +104,38 @@ function initPaprikaEvents() {
 function onGamePreload() {
     // loading assets
 	game.stage.backgroundColor = '#00FF00';
+    game.stage.smoothed = false;
+    game.scale.maxWidth = 600;
+    game.scale.maxHeight = 600;
+
+    //  scale up proportionally
+    this.game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    this.game.scale.setScreenSize(true);
     
     game.load.image("background", "img/crossroad.png");
-	game.load.image("trafficLight", "img/trafficLight.png");
-    game.load.spritesheet("lightStatus", "img/lightStatus.png", 48, 36);
-    game.load.spritesheet("car", "img/car.png", 44, 100);
+	game.load.spritesheet("trafficLight", "img/trafficLight.png", 64, 64);
+    game.load.spritesheet("lightStatus", "img/lightStatus.png", 12, 12);
+    game.load.spritesheet("car", "img/car.png", 32, 64);
 }
 
 function onGameCreate() {
     var bg = game.add.image(0,0, "background");
 
 	trafficLight = game.add.sprite(game.width/2, game.height/2,"trafficLight");
+    trafficLight.animations.add("default", [0], false);
+    trafficLight.animations.add("started", [1], false);
+    trafficLight.animations.play("default");
     trafficLight.anchor.setTo(0.5,0.5);
     
     lanes = game.add.group();
     
-    statusUp    = lanes.create(240, 84, "lightStatus"); // going down
+    statusUp    = lanes.create(92, 84, "lightStatus"); // going down
     statusUp.rotation = 1.5*Math.PI;
-    statusLeft  = lanes.create(164, 320, "lightStatus"); // going right
+    statusLeft  = lanes.create(84, 208, "lightStatus"); // going right
     statusLeft.rotation = Math.PI;
-    statusDown  = lanes.create(400, 396, "lightStatus"); // going up
+    statusDown  = lanes.create(208, 216, "lightStatus"); // going up
     statusDown.rotation = 0.5*Math.PI;
-    statusRight = lanes.create(476, 160, "lightStatus"); // going left
+    statusRight = lanes.create(216, 92, "lightStatus"); // going left
     //statusRight.rotation = 0;
     
     lanes.callAll('anchor.setTo', 'anchor', 0.5,0.5);
@@ -158,24 +170,26 @@ function onGameRender() {
 function inputRotate(e) {
 	console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
     
+    trafficLight.animations.play("started");
 	orientation = e.goalOrientation;
     updateLanes = true;
 }
     
 function initCars() {
     cars = game.add.group();
-    newCar(270, 0, 0, statusUp);
-    newCar(270, -120, 0, statusUp);
-    newCar(270, -240, 0, statusUp);
-    newCar(370, 480, Math.PI, statusDown);
-    newCar(370, 600, Math.PI, statusDown);
-    newCar(370, 720, Math.PI, statusDown);
-    newCar(50, 290, 1.5*Math.PI, statusLeft);
-    newCar(-70, 290, 1.5*Math.PI, statusLeft);
-    newCar(-190, 290, 1.5*Math.PI, statusLeft);
-    newCar(590, 190, 0.5*Math.PI, statusRight);
-    newCar(710, 190, 0.5*Math.PI, statusRight);
-    newCar(830, 190, 0.5*Math.PI, statusRight);
+    
+    newCar( 115,    0, 0, statusUp);
+    newCar( 115,  -80, 0, statusUp);
+    newCar( 115, -160, 0, statusUp);
+    newCar( 185,  300, Math.PI, statusDown);
+    newCar( 185,  380, Math.PI, statusDown);
+    newCar( 185,  460, Math.PI, statusDown);
+    newCar(   0,  185, 1.5*Math.PI, statusLeft);
+    newCar( -80,  185, 1.5*Math.PI, statusLeft);
+    newCar(-160,  185, 1.5*Math.PI, statusLeft);
+    newCar( 300,  115, 0.5*Math.PI, statusRight);
+    newCar( 380,  115, 0.5*Math.PI, statusRight);
+    newCar( 460,  115, 0.5*Math.PI, statusRight);
 }
 
 function newCar(x, y, r, l) {
