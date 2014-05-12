@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+        #leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #gameFrame {
+            width: 600px;
+            height: 600px;
+            float: left;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+        }
+	</style>
+</head>
+
+<body> 
+    <div id="leftColumn">
+        <h1>Teeter</h1>
+        <p></p>
+
+        <div id="fps"></div>
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="gameFrame"></div>
+    </div>
+
+	<script src="js/three.min.js"></script>
+	<script src="js/phaser.min.js"></script>
+    <script src="js/paprika.js"></script>
+	
+<script>
+// Phaser variables
+var game, cursors;
+var ball;
+var force = 500;
+var angle = 0; // range [0,2*pi]
+var tilt = 0;  // range [0,1]
+var newAngle = false;
+var newTilt = false;
+
+game = new Phaser.Game(600,600,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+
+// chilitags variables
+var bundleCard = {};
+
+function initPaprikaEvents() {
+    Paprika.start("videoFrame");
+    
+    // chilitags info
+    fpsText = document.createTextNode('');
+    document.getElementById('fps').appendChild(fpsText);
+
+    start = new Date();
+
+    Paprika.onUpdate(function(objects) {
+        var end = new Date();
+
+        var str = 'Objects: ';
+        for(var obj in objects){
+            str += obj + "(" +objects[obj][3]+ ")" + " ";
+        }
+        fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+        start = end;
+    });
+    
+    // define tag bundle
+    
+    // white side
+    bundleCard[6] = {size: 20, translation: [-17.5, -30, 0]};
+    bundleCard[7] = {size: 20, translation: [ 17.5,  30, 0]};
+    // black side
+    bundleCard[8] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
+    bundleCard[9] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
+    
+    Paprika.bundleTags({bundleCard: bundleCard});
+    
+    Paprika.onRotationUpdate(updateAngle, "bundleCard", "z");
+    Paprika.onAngleToCameraUpdate(updateTilt, "bundleCard");
+}
+
+function onGamePreload() {
+    // loading assets
+	game.stage.backgroundColor = '#888888';
+    game.stage.smoothed = false;
+    
+    game.load.image("ball", "img/teeter_ball.png");
+}
+
+function onGameCreate() {
+    // keyboard input
+	cursors = game.input.keyboard.createCursorKeys();
+    
+    //  Enable P2 physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
+//    game.physics.p2.setImpactEvents(true);
+    game.physics.p2.restitution = 0.5;
+    carsCollisionGroup = game.physics.p2.createCollisionGroup();
+    
+    initBall();
+    
+    initPaprikaEvents();
+}
+
+function resetGame() {
+    game.physics.p2.clear();
+}
+
+function onGameRender() {
+    // phaser debug information
+    // only visible when game is run with Phaser.CANVAS
+    game.debug.spriteBounds(ball); // display cars bounding box
+    game.debug.spriteInfo(ball); // display cars bounding box
+
+}
+
+// game logic
+
+function initBall() {
+    ball = game.add.sprite(100, 100, "ball");
+    ball.anchor.setTo(0.5, 0.5);
+    
+    game.physics.p2.enable(ball);
+    ball.body.fixedRotation = true;
+    ball.body.setCircle(16);
+    ball.body.damping = 0.5;
+}
+    
+function updateBallSpeed() {
+    ball.body.velocity.x += force * tilt * Math.cos(angle);
+    ball.body.velocity.y += force * tilt * Math.sin(angle);
+    
+    newAngle = false;
+    newTilt = false;
+}
+
+function updateAngle(data) {
+    angle = data.rotation;
+    newAngle = true;
+}
+
+function updateTilt(data) {
+    tilt = data.angleToCamera / Math.PI;
+    newTilt = true;
+}
+    
+function onGameUpdate() {    
+    var move = false;
+    // keyboard input
+	if(cursors.left.isDown) {
+        ball.body.velocity.x -= force;
+    }
+    else if(cursors.right.isDown) {
+        ball.body.velocity.x += force;
+    }
+    if(cursors.up.isDown) {
+        ball.body.velocity.y -= force;
+    }
+    else if(cursors.down.isDown) {
+        ball.body.velocity.y += force;
+    }
+    
+    if(newAngle && newTilt) {
+        updateBallSpeed();
+    }
+}
+</script>
+</body>
+</html>
