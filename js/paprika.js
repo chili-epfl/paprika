@@ -315,7 +315,7 @@ var Paprika = Paprika || ( function () {
         }
     }
     
-    var getAngleToCamera = function(transformation) {
+    var getTilt = function(transformation) {
         // format the transformationMatrix into a THREE.Matrix4
         var transformationMatrix = new THREE.Matrix4();
         transformationMatrix.set.apply(transformationMatrix, transformation);
@@ -323,13 +323,25 @@ var Paprika = Paprika || ( function () {
         // extract the rotation components
         var rotationMatrix = new THREE.Matrix4();
         rotationMatrix.extractRotation(transformationMatrix);
-
-        var normal = new THREE.Vector3(0, 0, -1);
-        var objectNormal = new THREE.Vector3(0, 0, -1);
         
-        // apply rotation to 
+        // compute normal tilt
+        var objectNormal = new THREE.Vector3(0, 0, -1);
         objectNormal.applyMatrix4(rotationMatrix);
-        return objectNormal.angleTo(normal);
+        var tilt = objectNormal.angleTo(new THREE.Vector3(0, 0, -1));
+        
+        // compute normal orientation
+        var projectedNormal = new THREE.Vector3(objectNormal.x, objectNormal.y, 0);
+        projectedNormal.normalize();
+        
+        var orientation = Math.atan2(projectedNormal.y, projectedNormal.x);
+        while (orientation >= 2*Math.PI) orientation -= 2*Math.PI;
+        while (orientation <          0) orientation += 2*Math.PI;
+        
+        return {tilt:tilt,
+                orientation:orientation,
+                normal3D:{x:objectNormal.x, y:objectNormal.y, z:objectNormal.z},
+                normal2D:{x:projectedNormal.x, y:projectedNormal.y}
+               };
     }
 
     return {
@@ -422,14 +434,17 @@ var Paprika = Paprika || ( function () {
         },
         
         //registers a function to call for every frame where `objectName` has been deected
-        onAngleToCameraUpdate : function(callback, objectName) {
+        onTiltUpdate : function(callback, objectName) {
             var trigger = function(transformation) {
-                var angleToCamera = getAngleToCamera(transformation);
+                var tmp = getTilt(transformation);
                 
                 callback({
                     objectName:objectName,
                     transformation:transformation,
-                    angleToCamera:angleToCamera
+                    tilt:tmp.tilt,
+                    orientation:tmp.orientation,
+                    normal3D:tmp.normal3D,
+                    normal2D:tmp.normal2D
                     });
             };
             
@@ -605,15 +620,15 @@ var Paprika = Paprika || ( function () {
         // by roughly pi radians
         onFlip : function(callback, objectName) {
 
-            // stores the initial orientation to compare against
+            // stores the initial flip state to compare against
             var previouslyFacing = undefined;
 
             // the logic computing whether or not calling `callback` when an object's
             // transformation matrix has been updated
             var trigger = function(transformation) {
                 // compute the euler angles of the transformation
-                var angleToCamera = getAngleToCamera(transformation);
-                var facing = angleToCamera < 0.5 * Math.PI;
+                var tilt = (getTilt(transformation)).tilt;
+                var facing = tilt < 0.5 * Math.PI;
 
                 // initialisation of previousOrientation
                 if (previouslyFacing === undefined) {
@@ -622,7 +637,7 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        angleToCamera:angleToCamera,
+                        tilt:tilt,
                         facing:facing});
                 }
 
@@ -632,10 +647,58 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        angleToCamera:angleToCamera,
+                        tilt:tilt,
                         facing:facing});
                     
                     previouslyFacing = facing;
+                }
+            };
+            trigger.reset = function() {
+                previouslyFacing = undefined;
+            }
+
+            // we add this trigger to the list of callbacks related to `objectName`
+            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+            else objectCallbacks[objectName] = [trigger];
+
+            return trigger;
+        },
+
+        // registers a `callback` function to call when `objectName` has been tilted
+        // past `limitAngle` radians
+        onTilt : function(callback, objectName, limitAngle) {
+
+            // stores the initial tilt to compare against
+            var previouslyTilted = undefined;
+
+            // the logic computing whether or not calling `callback` when an object's
+            // transformation matrix has been updated
+            var trigger = function(transformation) {
+                // compute the euler angles of the transformation
+                var tilt = (getTilt(transformation)).tilt;
+                var tilted = tilt > limitAngle;
+
+                // initialisation of previousOrientation
+                if (previouslyTilted === undefined) {
+                    previouslyTilted = tilted;
+
+                    callback({
+                        objectName:objectName,
+                        transformation:transformation,
+                        tilt:tilt,
+                        tilted:tilted});
+                }
+
+                // if the object has changed orientation with respect to the camera,
+                // call the callback and reset the reference orientation (previouslyFacing)
+                if (tilted != previouslyTilted) {
+                    callback({
+                        objectName:objectName,
+                        transformation:transformation,
+                        tilt:tilt,
+                        tilted:tilted});
+                    
+                    previouslyTilted = tilted;
                 }
             };
             trigger.reset = function() {
