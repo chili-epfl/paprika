@@ -627,8 +627,8 @@ var Paprika = Paprika || ( function () {
             // transformation matrix has been updated
             var trigger = function(transformation) {
                 // compute the euler angles of the transformation
-                var tilt = (getTilt(transformation)).tilt;
-                var facing = tilt < 0.5 * Math.PI;
+                var tmp = getTilt(transformation);
+                var facing = tmp.tilt < 0.5 * Math.PI;
 
                 // initialisation of previousOrientation
                 if (previouslyFacing === undefined) {
@@ -637,7 +637,8 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        tilt:tilt,
+                        tilt:tmp.tilt,
+                        orientation:tmp.orientation,
                         facing:facing});
                 }
 
@@ -647,7 +648,8 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        tilt:tilt,
+                        tilt:tmp.tilt,
+                        orientation:tmp.orientation,
                         facing:facing});
                     
                     previouslyFacing = facing;
@@ -675,8 +677,8 @@ var Paprika = Paprika || ( function () {
             // transformation matrix has been updated
             var trigger = function(transformation) {
                 // compute the euler angles of the transformation
-                var tilt = (getTilt(transformation)).tilt;
-                var tilted = tilt > limitAngle;
+                var tmp = getTilt(transformation);
+                var tilted = tmp.tilt > limitAngle;
 
                 // initialisation of previousOrientation
                 if (previouslyTilted === undefined) {
@@ -685,7 +687,8 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        tilt:tilt,
+                        tilt:tmp.tilt,
+                        orientation:tmp.orientation,
                         tilted:tilted});
                 }
 
@@ -695,7 +698,8 @@ var Paprika = Paprika || ( function () {
                     callback({
                         objectName:objectName,
                         transformation:transformation,
-                        tilt:tilt,
+                        tilt:tmp.tilt,
+                        orientation:tmp.orientation,
                         tilted:tilted});
                     
                     previouslyTilted = tilted;
