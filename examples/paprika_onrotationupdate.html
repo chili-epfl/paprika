@@ -51,7 +51,9 @@
         Paprika.start("videoFrame");
 
         Paprika.onRotationUpdate(function(data) {
-            tagDiv.style.transform = "rotate(" + data.rotation + "rad)";
+            tagDiv.style["transform"] = "rotate(" + data.rotation + "rad)";
+            tagDiv.style["-ms-transform"] = "rotate(" + data.rotation + "rad)";
+            tagDiv.style["-webkit-transform"] = "rotate(" + data.rotation + "rad)";
             
             tagText.nodeValue = data.objectName;
         }, "tag_1", "z");
