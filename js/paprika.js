@@ -130,6 +130,12 @@ var Paprika = Paprika || ( function () {
     var videoCanvas;
     var localMediaStream = null;
     
+    var videoWidth = 640;
+    var videoHeight = 480;
+    var scaleFactor = 1;
+    var displayWidth, displayHeight;
+    var canvasWrapper;
+    
     var camera;
 
     var waitForWorker = false;
@@ -225,7 +231,7 @@ var Paprika = Paprika || ( function () {
                 break;
 
             case "camera":
-                var far = 1000, near = 10, width = 640, height = 480;
+                var far = 1000, near = 10, width = video.width, height = video.height;
                 var m = data.cameraMatrix;
 
                 camera = new THREE.Camera();
@@ -346,30 +352,65 @@ var Paprika = Paprika || ( function () {
 
     return {
 
-        start : function(divId, videoId, visible) {
+        start : function(divId, videoId, visible, scale) {
             visible = typeof visible !== "undefined" ? visible : true;
             
-            if(videoId !== undefined) video = document.getElementById(videoId);
+            if(videoId !== undefined && video != null) {
+                video = document.getElementById(videoId);
+                videoWidth = video.width;
+                videoHeight = vide.height;
+            }
+            
+            if(scale !== undefined && scale != 0) {
+                scaleFactor = Math.min(1, Math.max(0, scale));
+            }
+            
+            displayWidth = Math.round(scaleFactor * videoWidth);
+            displayHeight = Math.round(scaleFactor * videoHeight);
+
             
             if(video === undefined || video == null) {
                 video = document.createElement("video");
                 video.autoplay = true;
-                video.width = 640;
-                video.height = 480;
+                video.width = videoWidth;
+                video.height = videoHeight;
                 video.style.display = "none";
             }
 
             videoCanvas = document.createElement("canvas");
-            videoCanvas.width = 640;
-            videoCanvas.height = 480;
+            videoCanvas.width = videoWidth;
+            videoCanvas.height = videoHeight;
+            
+            var cssTransform = (scaleFactor != 1) ? "translate(-" + Math.floor(0.5 * (1 - scaleFactor) * videoWidth)  + "px,-"
+                                                                  + Math.floor(0.5 * (1 - scaleFactor) * videoHeight) + "px)"
+                                                  + "scale(" + scaleFactor + "," + scaleFactor + ") " : "";     
+            
+            canvasWrapper = document.createElement("div");
+            canvasWrapper.appendChild(videoCanvas);
+            canvasWrapper.style["width"] = videoWidth + "px";
+            canvasWrapper.style["height"] = videoHeight + "px";
+            canvasWrapper.style["transform"] = cssTransform;
+            canvasWrapper.style["-ms-transform"] = cssTransform;
+            canvasWrapper.style["-webkit-transform"] = cssTransform;
+            canvasWrapper.style["transform"] = cssTransform;
+            
             
             if(!visible) {
                 videoCanvas.style.display = "none";
-            } else if(divId !== undefined && document.getElementById(divId) != null) {
-                document.getElementById(divId).appendChild(videoCanvas);
             } else {
-                document.body.appendChild(videoCanvas);
+                var userDiv;
+                
+                if(divId !== undefined && document.getElementById(divId) != null) {
+                    userDiv = document.getElementById(divId);
+                } else {
+                    userDiv = document.createElement("div");
+                    document.body.appendChild(userDiv);
+                }
+                userDiv.appendChild(canvasWrapper);
+                userDiv.style["width"] = displayWidth + "px";
+                userDiv.style["height"] = displayHeight + "px";
             }
+            
 
             navigator.getUserMedia(
                 {video: true},
@@ -382,7 +423,7 @@ var Paprika = Paprika || ( function () {
                 function(e) { console.log('Error!', e); }
             );
             
-            worker.run({type: "camera", h:480, w:640});
+            worker.run({type: "camera", h:videoHeight, w:videoWidth});
 
             // start the detection
             //the timeOut is a work around Firefox's bug 879717
