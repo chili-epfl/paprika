@@ -87,7 +87,7 @@ var tagReset = "tag_2";
 var paprikaTriggers = [];
     
 function initPaprikaEvents() {
-    Paprika.start("videoFrame");
+    Paprika.start("videoFrame", null, true, 0.5);
     
     // chilitags info
     fpsText = document.createTextNode('');

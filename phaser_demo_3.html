@@ -24,9 +24,19 @@
     <div id="leftColumn">
         <h1>Asteroids</h1>
         <h2></h2>
-        <p>
-        <br>
-        <br></p>
+        <p>Destroy as many asteroids as you can while not letting them hit you.
+        <br>Control the orientation of the spaceship by turning the card:
+            <br>
+            <img width="64px" src="img/viewmode_horizontal_flip.png"/>
+            if holding it in front of the webcam. (tags 6, 7, 8, 9)
+            <br>
+            <img width="64px" src="img/viewmode_vertical_rotate.png"/>
+            if you're playing on a desk with the webcam tilted down (tags 10, 11, 12, 13).
+            <br>
+        <br>Flip the card to switch between Black and White modes.
+        <br>Asteroids of the opposite color won't hit you.
+        <br>Your shots will only hit asteroids of the same color.
+        <br>Reset the game by showing the reset card. (tag 2)</p>
 
         <div id="fps"></div>
         <div id="videoFrame"></div>
@@ -83,7 +93,7 @@ var tagReset = "tag_2";
 var paprikaTriggers = [];
     
 function initPaprikaEvents() {
-    Paprika.start("videoFrame");
+    Paprika.start("videoFrame", null, true, 0.5);
     
     // chilitags info
     fpsText = document.createTextNode('');
