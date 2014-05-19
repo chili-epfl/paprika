@@ -62,7 +62,7 @@ var tagTrafficLight = "tag_1";
 var tagReset = "tag_2";
     
 function initPaprikaEvents() {
-    Paprika.start("videoFrame");
+    Paprika.start("videoFrame", null, true, 0.5);
     
     // chilitags info
     fpsText = document.createTextNode('');
