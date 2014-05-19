@@ -20,8 +20,8 @@
 
 <body>
         <h1>Paprika examples</h1>
-        <h2>Paprika.onFlip(callback, objectName)</h2>
-        <h3>Uses tags: 6, 7, 8, 9</h3>
+        <h2>Paprika.onTiltUpdate(callback, objectName)</h2>
+        <h3>Uses tags: 6, 7</h3>
     
     <div id="leftColumn">
         <div id="videoFrame"></div>
@@ -36,13 +36,23 @@
 	
     <script>
         var exampleFrame = document.getElementById("exampleFrame");
-        
         var tagText = document.createTextNode('');
+        var tiltDiv = document.createElement("div");
+        tiltDiv.style.height = "20px";
+        tiltDiv.style.width = "0px";
+        tiltDiv.style.backgroundColor= "#55FF55";
+        tiltDiv.style.margin= "0 auto";
         var tagDiv = document.createElement("div");
+        tagDiv.style.textAlign = "center";
         tagDiv.style.position = "relative";
-        tagDiv.style.left = "310px";
         tagDiv.style.top = "230px";
+        tagDiv.style.left = "80px";
+        tagDiv.style.height = "20px";
+        tagDiv.style.width = "480px";
+        tagDiv.style.display = "inline-block";
+        tagDiv.appendChild(tiltDiv);
         tagDiv.appendChild(tagText);
+        
         exampleFrame.appendChild(tagDiv);
         
         Paprika.start("videoFrame");
@@ -51,25 +61,19 @@
         // white side
         bundle[6] = {size: 20, translation: [-17.5, -30, 0]};
         bundle[7] = {size: 20, translation: [ 17.5,  30, 0]};
-        // black side
-        bundle[8] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
-        bundle[9] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
 
         Paprika.bundleTags({bundle:bundle});
 
-        Paprika.onFlip(function(data) {
+        Paprika.onTiltUpdate(function(data) {
+            tagDiv.style["transform"] = "rotate(" + data.orientation + "rad)";
+            tagDiv.style["-ms-transform"] = "rotate(" + data.orientation + "rad)";
+            tagDiv.style["-webkit-transform"] = "rotate(" + data.orientation + "rad)";
+            
+            tiltDiv.style.width = Math.round(480 * data.tilt / Math.PI) + "px";
+            
             tagText.nodeValue = data.objectName;
             
-            if(data.facing){
-                exampleFrame.style.color = "black";
-                exampleFrame.style.backgroundColor = "#DDDDDD";
-            } else {
-                exampleFrame.style.color = "white";
-                exampleFrame.style.backgroundColor = "#222222";
-            }
-            
             console.log("objectName: " + data.objectName +
-                        ", facing: " + data.facing + 
                         ", tilt: " + data.tilt + 
                         ", orientation: " + data.orientation);
         }, "bundle");

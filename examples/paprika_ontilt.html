@@ -20,7 +20,7 @@
 
 <body>
         <h1>Paprika examples</h1>
-        <h2>Paprika.onFlip(callback, objectName)</h2>
+        <h2>Paprika.onTilt(callback, objectName, limitAngle)</h2>
         <h3>Uses tags: 6, 7, 8, 9</h3>
     
     <div id="leftColumn">
@@ -57,10 +57,10 @@
 
         Paprika.bundleTags({bundle:bundle});
 
-        Paprika.onFlip(function(data) {
+        Paprika.onTilt(function(data) {
             tagText.nodeValue = data.objectName;
             
-            if(data.facing){
+            if(data.tilted){
                 exampleFrame.style.color = "black";
                 exampleFrame.style.backgroundColor = "#DDDDDD";
             } else {
@@ -69,10 +69,10 @@
             }
             
             console.log("objectName: " + data.objectName +
-                        ", facing: " + data.facing + 
+                        ", tilted: " + data.tilted + 
                         ", tilt: " + data.tilt + 
                         ", orientation: " + data.orientation);
-        }, "bundle");
+        }, "bundle", 0.1 * Math.PI);
     </script>
 </body>
 </html>
