@@ -34,7 +34,7 @@
             if you're playing on a desk with the webcam tilted down (tags 10, 11, 12, 13).
             <br>
         <br>Flip the card to switch between Black and White modes.
-        <br>Asteroids of the opposite color won't hit you.
+        <br>Asteroids of any color can hit you.
         <br>Your shots will only hit asteroids of the same color.
         <br>Reset the game by showing the reset card. (tag 2)</p>
 
@@ -63,6 +63,7 @@ var shotDelay = 300;
 var firingTime = 0;
 var laserSpeed = 400;
 var explosionGroup;
+var fire = false;
 
 var asteroidGroup;
 var totalAsteroids = 30;
@@ -83,12 +84,15 @@ var startScreenTime = 4;
 var startEndGraphics, startEndText;
 
 var scoreText, timeText;
+    
+var laserSound, explosionSound, bgmusic;
 
-game = new Phaser.Game(800,600,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+game = new Phaser.Game(600,600,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
 
 // chilitags variables
 var fpsText, start;
-var bundleCard = {};
+var aboveViewCard = {};
+var belowViewCard = {};
 var tagReset = "tag_2";
 var paprikaTriggers = [];
     
@@ -112,22 +116,31 @@ function initPaprikaEvents() {
         start = end;
     });
 
-    // define tag bundle
-    
+    // card to be seen from above (desktop webcam setup)
     // white side
-    bundleCard[6] = {size: 20, translation: [-17.5, -30, 0]};
-    bundleCard[7] = {size: 20, translation: [ 17.5,  30, 0]};
+    aboveViewCard[10] = {size: 20, translation: [-17.5, -30, 0]};
+    aboveViewCard[11] = {size: 20, translation: [ 17.5,  30, 0]};
     // black side
-    bundleCard[8] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
-    bundleCard[9] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
+    aboveViewCard[12] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
+    aboveViewCard[13] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
     
-    Paprika.bundleTags({bundleCard: bundleCard});
+    // card to be seen from below (laptop webcam setup)
+    // white side
+    belowViewCard[6] = {size: 20, translation: [-17.5, -30, 0]};
+    belowViewCard[7] = {size: 20, translation: [ 17.5,  30, 0]};
+    // black side
+    belowViewCard[8] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
+    belowViewCard[9] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
+    
+    Paprika.bundleTags({aboveViewCard:aboveViewCard, belowViewCard:belowViewCard});
     
     // detect change in tag rotation
-    Paprika.onRotationUpdate(inputRotate, "bundleCard", "z");
+    Paprika.onRotationUpdate(inputRotate, "aboveViewCard", "z");
+    Paprika.onRotationUpdate(inputRotate, "belowViewCard", "z");
     
     // mode switching logic
-    Paprika.onFlip(inputColorMode, "bundleCard" );
+    Paprika.onFlip(inputColorMode, "aboveViewCard" );
+    Paprika.onFlip(inputColorMode, "belowViewCard" );
     
     // restart game
     Paprika.onAppear(resetGame, tagReset);
@@ -138,12 +151,18 @@ function onGamePreload() {
 	game.stage.backgroundColor = '#888888';
     game.stage.smoothed = false;
     
-//    game.load.image("background", "img/crossroad.png");
+    game.load.image("background", "img/asteroids_background.png");
 	game.load.spritesheet("spaceship", "img/asteroids_spaceship.png", 32, 32);
 	game.load.spritesheet("asteroid_s", "img/asteroids_small.png", 32, 32);
 	game.load.spritesheet("asteroid_l", "img/asteroids_large.png", 64, 32);
     game.load.spritesheet("laser", "img/asteroids_laser.png", 1, 16);
     game.load.spritesheet("explosion", "img/asteroids_explosion.png", 64, 64);
+    
+    // explosion sound by killkhan : http://www.freesound.org/people/killkhan/sounds/150210/
+    game.load.audio("explosion", "audio/asteroids_explosion.wav");
+    
+    // "This World of Ours" by Danny Baranowsky: http://dbsoundworks.com/
+    game.load.audio("bgm", "audio/asteroids_bgm_dbsoundworks.mp3");
 }
 
 function onGameCreate() {
@@ -154,7 +173,13 @@ function onGameCreate() {
     cursors.fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     cursors.fireButton.onDown.add(shootLaser, this);
     
+    game.add.image(0, 0, "background");
+    
     game.physics.startSystem(Phaser.Physics.ARCADE);
+    
+    explosionSound = game.add.audio("explosion");
+    bgmusic = game.add.audio("bgm", 0.25, true);
+    bgmusic.play();
 
 	spaceship = newSpaceship(0.5 * game.width,0.5 * game.height);
     
@@ -164,13 +189,13 @@ function onGameCreate() {
     
     initPaprikaEvents();
     
-    scoreText = game.add.text(10, 10, "", { font: "18px Impact", fill: "#ffffff", align: "left" });
-    timeText = game.add.text(0.5 * game.width, 10, "", { font: "24px Impact", fill: "#ffffff", align: "center" });
+    scoreText = game.add.text(5, 5, "", { font: "12px Impact", fill: "#ffffff", align: "left" });
+    timeText = game.add.text(0.5 * game.width - 28, 5, "", { font: "24px Impact", fill: "#ffffff", align: "center" });
     
     startEndGraphics = game.add.graphics(0, 0);
     startEndGraphics.beginFill(0x000000);
     startEndGraphics.drawRect(0, 0, game.width, game.height);
-    startEndText = game.add.text(250, 50 + 0.25 * game.height, "", { font: "58px Impact", fill: "#ffffff", align: "center" });
+    startEndText = game.add.text(222, 100 + 0.25 * game.height, "", { font: "32px Impact", fill: "#ffffff", align: "center" });
     
     startScreen();
 }
@@ -178,15 +203,11 @@ function onGameCreate() {
 function resetGame() {
     game.time.events.remove(spawnAsteroidsEvent);
     
+    fire = false;
     spaceship.revive();
     
     laserGroup.callAll('kill',this);
-    laserGroup.destroy();
-    initLasers();
-    
     explosionGroup.callAll('kill',this);
-    explosionGroup.destroy();
-    initExplosions();
     
     asteroidGroup.callAll('kill',this);
     asteroidGroup.destroy();
@@ -217,6 +238,7 @@ function startScreen() {
     game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() {
         startEndGraphics.alpha = 0;
         startEndText.setText("");
+        fire = true;
     }, this);
 }
 
@@ -226,6 +248,8 @@ function endScreen() {
     startEndGraphics.alpha = 0.5;
     startEndText.setText( "Score: " + destroyedCount +
                           "\nTime: " + finalTime + " sec.");
+    
+    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, resetGame);
 }
 
 function onGameRender() {
@@ -240,21 +264,27 @@ function onGameRender() {
 function inputRotate(data) {
     //console.log(data.rotation + " ~ " + data.goalRotation + " isIn=" + data.hasEntered);
     
-    rotation = data.rotation;
+    if(data.objectName == "aboveViewCard") {
+        rotation = Math.PI + data.rotation; // rotate 180°
+    } else if(data.objectName == "belowViewCard") {
+        rotation = 2 * Math.PI - data.rotation; // invert angle (reflect horizontally)
+    }
 }
     
 function inputColorMode(data) {
 //    console.log("tilt:" + Math.round(data.tilt / Math.PI * 180));
-
-    if(data.facing){
+    
+    if( data.objectName == "aboveViewCard" &&  data.facing ||
+        data.objectName == "belowViewCard" && !data.facing ) {
         // play white
         spaceship.animations.play("B2W");
         spaceship.mode = "white";
-    } else {
+    } else if( data.objectName == "aboveViewCard" && !data.facing ||
+               data.objectName == "belowViewCard" &&  data.facing ) {
         // play black
         spaceship.animations.play("W2B");
         spaceship.mode = "black";
-    }   
+    }
 }
     
 function newSpaceship(x, y) {
@@ -284,6 +314,7 @@ function initLasers() {
     laserGroup.setAll('outOfBoundsKill', true);
     laserGroup.callAll('animations.add', 'animations', 'W', [0], false);
     laserGroup.callAll('animations.add', 'animations', 'B', [1], false);
+    fire = false;
 }
     
 function initExplosions() {
@@ -298,10 +329,11 @@ function explodeAt(x,y) {
     var explosion = explosionGroup.getFirstExists(false);
     explosion.reset(x, y);
     explosion.play('explode', 15, false, true);
+    explosionSound.play();
 }
     
 function shootLaser() {
-    if (game.time.now > firingTime && spaceship.alive)
+    if (fire && game.time.now > firingTime)
     {
         //  Grab the first laser we can from the pool
         var laser = laserGroup.getFirstExists(false);
@@ -377,7 +409,10 @@ function newAsteroid(x, y, a) {
     asteroid.checkWorldBounds = true;
     asteroid.events.onOutOfBounds.add(asteroidGone, this);
     
-    game.physics.arcade.moveToObject(asteroid, spaceship, asteroidSpeed);
+    game.physics.arcade.moveToXY(asteroid,
+                                 spaceship.x + (game.rnd.frac() - 0.5) * 300,
+                                 spaceship.y + (game.rnd.frac() - 0.5) * 300,
+                                 asteroidSpeed);
     
     return asteroid;
 }
@@ -412,15 +447,15 @@ function asteroidDown(laser, asteroid) {
 
 function spaceshipDown(spaceship, asteroid) {
     asteroid.active = false;
+    fire = false;
     
-    if(asteroid.mode === spaceship.mode) {
-        // spaceship destroyed
-        spaceship.kill();
-        asteroid.kill();
-        
-        explodeAt(spaceship.x, spaceship.y);
-    }
-//    resetGame();
+    // spaceship destroyed
+    spaceship.kill();
+    asteroid.kill();
+
+    explodeAt(spaceship.x, spaceship.y);
+    
+    game.time.events.add(Phaser.Timer.SECOND, endScreen);
 }
     
 function updateRotation() {
@@ -430,7 +465,7 @@ function updateRotation() {
 function updateScore() {
     scoreText.setText("Remaining: " + remainingCount +
                       "\nDestroyed: " + destroyedCount +
-                      "\nEvaded: " + evadedCount);
+                      "\nMissed: " + evadedCount);
     
     timeText.setText("Time:\n" + Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
     
