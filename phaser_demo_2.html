@@ -10,6 +10,7 @@
 		#leftColumn {
             float:left;
             margin-right: 20px;
+            width: 600px;
         }
         #rightColumn {
             float:left;
@@ -32,6 +33,9 @@
         <br>Coordinate the lights to get all cars through in the shortest time possible.
         <br>Don't let (too many) cars crash!
         <br>Reset the game by showing the reset card. (tag 2)</p>
+        <p><img width="64px" src="img/viewmode_vertical_rotate.png"/>
+        This game is meant to be played on a desk, with the webcam pointing down.
+        </p>
         <h2>Downloads</h2>
         <ul>
             <li><a target="_blank" href="print/phaser_demo_2.pdf">PDF file with cards.</a></li>
@@ -42,8 +46,8 @@
             <li><a target="_blank" href="print/phaser_demo_3_asteroids_card_reset.png">PNG image of reset card.</a></li>
         </ul>
 
-        <div id="fps"></div>
         <div id="videoFrame"></div>
+        <div id="fps"></div>
     </div>
     
     <div id="rightColumn">
@@ -181,12 +185,12 @@ function onGameCreate() {
     initPaprikaEvents();
     
     scoreText = game.add.text(5, 5, "", { font: "12px Impact", fill: "#ffffff", align: "left" });
-    timeText = game.add.text(0.5 * game.width, 5, "", { font: "16px Impact", fill: "#ffffff", align: "center" });
+    timeText = game.add.text(0.5 * game.width - 28, 5, "", { font: "24px Impact", fill: "#ffffff", align: "center" });
     
     startEndGraphics = game.add.graphics(0, 0);
     startEndGraphics.beginFill(0x000000);
     startEndGraphics.drawRect(0, 0, game.width, game.height);
-    startEndText = game.add.text(90, 100 + 0.25 * game.height, "", { font: "32px Impact", fill: "#ffffff", align: "center" });
+    startEndText = game.add.text(210, 100 + 0.25 * game.height, "", { font: "32px Impact", fill: "#ffffff", align: "center" });
     
     startScreen();
 }
@@ -211,10 +215,6 @@ function resetGame() {
     remainingCount = totalCars;
     
     startScreen();
-    
-    paprikaTriggers.forEach(function(trigger) {
-        trigger.reset();
-    });
 }
 
 function startScreen() {
@@ -224,13 +224,16 @@ function startScreen() {
     startEndGraphics.alpha = 0.5;
     
     game.time.events.repeat(Phaser.Timer.SECOND, startScreenTime, function() {
-        startEndText.setText("Crossroads Traffic Management \nwill start in:\n" +
+        startEndText.setText("Crossroads\nTraffic\nManagement \nwill start in:\n" +
                             Math.round(startScreenTime - game.time.elapsedSecondsSince(startTime)));
     }, this);
     
     game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() {
         startEndGraphics.alpha = 0;
         startEndText.setText("");
+        paprikaTriggers.forEach(function(trigger) {
+            trigger.reset();
+        });
     }, this);
 }
 
@@ -252,23 +255,25 @@ function onGameRender() {
 // game logic
 function inputRotate(e) {
     //console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
+    var newOrientation = Math.PI + e.goalOrientation;
+    while(newOrientation >= 2*Math.PI) newOrientation -= 2*Math.PI;
     
     switch(e.objectName){
         case tagTrafficLightNW:
             trafficLightNW.animations.play("started");
-            orientations.NW = e.goalOrientation;
+            orientations.NW = newOrientation;
             break;
         case tagTrafficLightNE:
             trafficLightNE.animations.play("started");
-            orientations.NE = e.goalOrientation;
+            orientations.NE = newOrientation;
             break;
         case tagTrafficLightSW:
             trafficLightSW.animations.play("started");
-            orientations.SW = e.goalOrientation;
+            orientations.SW = newOrientation;
             break;
         case tagTrafficLightSE:
             trafficLightSE.animations.play("started");
-            orientations.SE = e.goalOrientation;
+            orientations.SE = newOrientation;
             break;
     }
     
