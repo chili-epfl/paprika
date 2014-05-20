@@ -35,9 +35,9 @@
         <br>Reset the game by showing the reset card. (tag #2)</p>
         <h2>Downloads</h2>
         <ul>
-            <li><a target="_blank" href="print/phaser_demo_1.pdf">PDF file with cards.</a></li>
-            <li><a target="_blank" href="print/phaser_demo_1_controller.png">PNG image of controller card.</a></li>
-            <li><a target="_blank" href="print/phaser_demo_1_reset.png">PNG image of reset card.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2.pdf">PDF file with cards (from demo 2.)</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_1.png">PNG image of controller card (from demo 2.)</a></li>
+            <li><a target="_blank" href="print/phaser_demo_3_asteroids_card_reset.png">PNG image of reset card.</a></li>
         </ul>
 
         <div id="fps"></div>
@@ -72,7 +72,7 @@ var tagTrafficLight = "tag_1";
 var tagReset = "tag_2";
     
 function initPaprikaEvents() {
-    Paprika.start("videoFrame");
+    Paprika.start("videoFrame", null, true, 0.5);
     
     // chilitags info
     fpsText = document.createTextNode('');
