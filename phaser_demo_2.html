@@ -28,6 +28,15 @@
         <br>Coordinate the lights to get all cars through in the shortest time possible.
         <br>Don't let (too many) cars crash!
         <br>Reset the game by showing the reset card. (tag 2)</p>
+        <h2>Downloads</h2>
+        <ul>
+            <li><a target="_blank" href="print/phaser_demo_2.pdf">PDF file with cards.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_1.png">PNG image of controller card NW.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_3.png">PNG image of controller card NE.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_4.png">PNG image of controller card SW.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_2_controller_5.png">PNG image of controller card SE.</a></li>
+            <li><a target="_blank" href="print/phaser_demo_3_asteroids_card_reset.png">PNG image of reset card.</a></li>
+        </ul>
 
         <div id="fps"></div>
         <div id="videoFrame"></div>
@@ -383,7 +392,6 @@ function newCar(x, y, r, l) {
     car.body.setCollisionGroup(carsCollisionGroup);
     car.body.collides(carsCollisionGroup, crashCars, this);
     car.body.setZeroDamping();
-
     
     car.events.onOutOfBounds.add(successfulCarKill, this);
     
