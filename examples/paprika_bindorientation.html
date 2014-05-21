@@ -20,7 +20,7 @@
 
 <body>
         <h1>Paprika examples</h1>
-        <h2>Paprika.onRotationUpdate(callback, objectName, axis)</h2>
+        <h2>Paprika.bindOrientation(callback, objectName)</h2>
         <h3>Uses tags: tag_1</h3>
     
     <div id="leftColumn">
@@ -50,13 +50,13 @@
         
         Paprika.start("videoFrame");
 
-        Paprika.onRotationUpdate(function(data) {
-            tagDiv.style["transform"] = "rotate(" + data.rotation + "rad)";
-            tagDiv.style["-ms-transform"] = "rotate(" + data.rotation + "rad)";
-            tagDiv.style["-webkit-transform"] = "rotate(" + data.rotation + "rad)";
+        Paprika.bindOrientation(function(data) {
+            tagDiv.style["transform"] = "rotate(" + data.orientation + "rad)";
+            tagDiv.style["-ms-transform"] = "rotate(" + data.orientation + "rad)";
+            tagDiv.style["-webkit-transform"] = "rotate(" + data.orientation + "rad)";
             
             tagText.nodeValue = data.objectName;
-        }, "tag_1", "z");
+        }, "tag_1");
     </script>
 </body>
 </html>
