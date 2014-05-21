@@ -21,7 +21,6 @@
 <body>
         <h1>Paprika examples</h1>
         <h2>Paprika.onAppear(callback, objectName)</h2>
-        <h2>Paprika.onDisappear(callback, objectName)</h2>
         <h3>Uses tags: tag_1</h3>
     
     <div id="leftColumn">
@@ -48,15 +47,15 @@
         Paprika.start("videoFrame");
 
         Paprika.onAppear(function(data) {
-            
-            tagText.nodeValue = data.objectName;
-            
-            exampleFrame.style.backgroundColor = "#55FF55";
-        }, "tag_1");
-        
-        Paprika.onDisappear(function(data) {
-            tagText.nodeValue = "";
-            exampleFrame.style.backgroundColor = "#FF5555";
+            if(data.present){
+                // the tag has appeared
+                tagText.nodeValue = data.objectName;
+                exampleFrame.style.backgroundColor = "#55FF55";
+            } else {
+                // the tag has disappeared
+                tagText.nodeValue = "";
+                exampleFrame.style.backgroundColor = "#FF5555";
+            }
         }, "tag_1");
     </script>
 </body>
