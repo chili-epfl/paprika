@@ -89,10 +89,10 @@ function initPaprikaEvents() {
     });
 
     // detect change in tag orientation
-    Paprika.onOrient(inputRotate, tagTrafficLight,           0, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagTrafficLight, 0.5*Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagTrafficLight,     Math.PI, 0.1*Math.PI);
-    Paprika.onOrient(inputRotate, tagTrafficLight, 1.5*Math.PI, 0.1*Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight,           0);
+    Paprika.onOrient(inputRotate, tagTrafficLight, 0.5*Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight,     Math.PI);
+    Paprika.onOrient(inputRotate, tagTrafficLight, 1.5*Math.PI);
     
     // restart game
     Paprika.onAppear(resetGame, tagReset);
@@ -152,31 +152,33 @@ function onGameCreate() {
     initPaprikaEvents();
 }
 
-function resetGame() {
-    game.physics.p2.clear();
-    cars.destroy();
-    
-    initCars();
-    
-    lanes.callAll('animations.play', 'animations', "isRed");
-    activeLane = undefined;
-    updateLanes = false;
+function resetGame(e) {
+    if(e.present) {
+        cars.destroy();
+
+        initCars();
+
+        lanes.callAll('animations.play', 'animations', "isRed");
+        activeLane = undefined;
+        updateLanes = false;
+    }
 }
 
 function onGameRender() {
     // phaser debug information
     // only visible when game is run with Phaser.CANVAS
 //    cars.forEach(function(car) { game.debug.spriteBounds(car); }); // display cars bounding box
-
 }
     
 // game logic
 function inputRotate(e) {
-	console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
+    console.log(e.orientation + " ~ " + e.goalOrientation);
     
-    trafficLight.animations.play("started");
-	orientation = e.goalOrientation;
-    updateLanes = true;
+    if(e.oriented) {
+        trafficLight.animations.play("started");
+        orientation = e.goalOrientation;
+        updateLanes = true;
+    }
 }
     
 function initCars() {
