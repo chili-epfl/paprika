@@ -142,15 +142,15 @@ function initPaprikaEvents() {
     Paprika.bundleTags({aboveViewCard:aboveViewCard, belowViewCard:belowViewCard});
     
     // detect change in tag rotation
-    Paprika.onRotationUpdate(inputRotate, "aboveViewCard", "z");
-    Paprika.onRotationUpdate(inputRotate, "belowViewCard", "z");
+    Paprika.bindOrientation(inputRotate, "aboveViewCard");
+    Paprika.bindOrientation(inputRotate, "belowViewCard");
     
     // mode switching logic
     Paprika.onFlip(inputColorMode, "aboveViewCard" );
     Paprika.onFlip(inputColorMode, "belowViewCard" );
     
     // restart game
-    Paprika.onAppear(resetGame, tagReset);
+    Paprika.onAppear(function(data) { if(data.present) resetGame(); }, tagReset);
 }
 
 function onGamePreload() {
@@ -272,9 +272,9 @@ function inputRotate(data) {
     //console.log(data.rotation + " ~ " + data.goalRotation + " isIn=" + data.hasEntered);
     
     if(data.objectName == "aboveViewCard") {
-        rotation = Math.PI + data.rotation; // rotate 180°
+        rotation = Math.PI + data.orientation; // rotate 180°
     } else if(data.objectName == "belowViewCard") {
-        rotation = 2 * Math.PI - data.rotation; // invert angle (reflect horizontally)
+        rotation = 2 * Math.PI - data.orientation; // invert angle (reflect horizontally)
     }
 }
     

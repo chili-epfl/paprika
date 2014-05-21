@@ -196,26 +196,28 @@ function onGameCreate() {
     startScreen();
 }
 
-function resetGame() {
-    game.time.events.remove(spawnCarsEvent);
-    
-    resetLights();
-    resetLanes();
-    
-    game.physics.p2.clear();
-    game.physics.startSystem(Phaser.Physics.P2JS);
-    game.physics.p2.setImpactEvents(true);
-    
-    cars.destroy();
-    initCars();
-    
-    updateLanes = false;
-    
-    successCount = 0;
-    crashedCount = 0;
-    remainingCount = totalCars;
-    
-    startScreen();
+function resetGame(e) {
+    if(e.present) {
+        game.time.events.remove(spawnCarsEvent);
+
+        resetLights();
+        resetLanes();
+
+        game.physics.p2.clear();
+        game.physics.startSystem(Phaser.Physics.P2JS);
+        game.physics.p2.setImpactEvents(true);
+
+        cars.destroy();
+        initCars();
+
+        updateLanes = false;
+
+        successCount = 0;
+        crashedCount = 0;
+        remainingCount = totalCars;
+
+        startScreen();
+    }
 }
 
 function startScreen() {
@@ -255,30 +257,31 @@ function onGameRender() {
     
 // game logic
 function inputRotate(e) {
-    //console.log(e.orientation + " ~ " + e.goalOrientation + " isIn=" + e.hasEntered);
-    var newOrientation = Math.PI + e.goalOrientation;
-    while(newOrientation >= 2*Math.PI) newOrientation -= 2*Math.PI;
-    
-    switch(e.objectName){
-        case tagTrafficLightNW:
-            trafficLightNW.animations.play("started");
-            orientations.NW = newOrientation;
-            break;
-        case tagTrafficLightNE:
-            trafficLightNE.animations.play("started");
-            orientations.NE = newOrientation;
-            break;
-        case tagTrafficLightSW:
-            trafficLightSW.animations.play("started");
-            orientations.SW = newOrientation;
-            break;
-        case tagTrafficLightSE:
-            trafficLightSE.animations.play("started");
-            orientations.SE = newOrientation;
-            break;
+    if(e.oriented) {
+        var newOrientation = Math.PI + e.goalOrientation;
+        while(newOrientation >= 2*Math.PI) newOrientation -= 2*Math.PI;
+
+        switch(e.objectName){
+            case tagTrafficLightNW:
+                trafficLightNW.animations.play("started");
+                orientations.NW = newOrientation;
+                break;
+            case tagTrafficLightNE:
+                trafficLightNE.animations.play("started");
+                orientations.NE = newOrientation;
+                break;
+            case tagTrafficLightSW:
+                trafficLightSW.animations.play("started");
+                orientations.SW = newOrientation;
+                break;
+            case tagTrafficLightSE:
+                trafficLightSE.animations.play("started");
+                orientations.SE = newOrientation;
+                break;
+        }
+
+        updateLanes = true;
     }
-    
-    updateLanes = true;
 }
     
 function newTrafficLight(x, y) {
