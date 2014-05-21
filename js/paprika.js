@@ -549,56 +549,6 @@ var Paprika = Paprika || ( function () {
             return trigger;
         },
 
-        // registers a `callback` function to call when `objectName` has been rotated
-        // by at least `minDelta` radians
-        onRotate : function(callback, objectName, minDelta) {
-
-            // stores the initial orientation to compare against
-            var previousOrientation = undefined;
-
-            // the logic computing whether or not calling `callback` when an object's
-            // transformation matrix has been updated
-            var trigger = function(transformation) {
-                // compute the euler angles of the transformation
-                var orientation = getRotation(transformation, "z");
-
-                // initialisation of previousOrientation
-                if (previousOrientation === undefined) {
-                    previousOrientation = orientation;
-
-                    callback({
-                        objectName:objectName,
-                        transformation:transformation,
-                        orientation:orientation,
-                        delta:0});
-                }
-
-                // computing the rotation since `previousOrientation`,
-                // and normalizing in ]-Math.PI, Math.PI]
-                var delta = orientation-previousOrientation;
-                while (delta >   Math.PI) delta -= 2*Math.PI;
-                while (delta <= -Math.PI) delta += 2*Math.PI;
-
-                // if the rotation is beyond the minDelta threshold, call the callback
-                // and reset the reference orientation (previousOrientation)
-                if (Math.abs(delta) > minDelta) {
-                    callback({
-                        objectName:objectName,
-                        transformation:transformation,
-                        orientation:orientation,
-                        delta:delta});
-                    previousOrientation = orientation;
-                }
-            };
-            trigger.reset = function() { previousOrientation = undefined; }
-
-            // we add this trigger to the list of callbacks related to `objectName`
-            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
-            else objectCallbacks[objectName] = [trigger];
-
-            return trigger;
-        },
-
         // registers a `callback` function to call when `objectName` is within +/-
         // `epsilon` radians from `goalOrientation`, and when the orientation of
         // `objectName` changes again by at least `epsilon` radians. Note that this
