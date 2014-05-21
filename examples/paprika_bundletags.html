@@ -75,31 +75,31 @@
 
         Paprika.bundleTags({bundle:bundle});
 
-        Paprika.onPositionUpdate(function(data) {
-            tag1Div.style.left = data.pixelPositionX + "px";
-            tag1Div.style.top = data.pixelPositionY + "px";
+        Paprika.bindPosition(function(data) {
+            tag1Div.style.left = data.x + "px";
+            tag1Div.style.top = data.y + "px";
             
             tag1Text.nodeValue = "\n\n\n" + data.objectName + 
-                                "(" + data.pixelPositionX + 
-                                "," + data.pixelPositionY + ")";
+                                "(" + data.x + 
+                                "," + data.y + ")";
         }, "tag_6");
 
-        Paprika.onPositionUpdate(function(data) {
-            tag2Div.style.left = data.pixelPositionX + "px";
-            tag2Div.style.top = data.pixelPositionY + "px";
+        Paprika.bindPosition(function(data) {
+            tag2Div.style.left = data.x + "px";
+            tag2Div.style.top = data.y + "px";
             
             tag2Text.nodeValue = "\n\n\n" + data.objectName + 
-                                "(" + data.pixelPositionX + 
-                                "," + data.pixelPositionY + ")";
+                                "(" + data.x + 
+                                "," + data.y + ")";
         }, "tag_7");
 
-        Paprika.onPositionUpdate(function(data) {
-            bundleDiv.style.left = data.pixelPositionX + "px";
-            bundleDiv.style.top = data.pixelPositionY + "px";
+        Paprika.bindPosition(function(data) {
+            bundleDiv.style.left = data.x + "px";
+            bundleDiv.style.top = data.y + "px";
             
             bundleText.nodeValue = "\n\n\n" + data.objectName + 
-                                "(" + data.pixelPositionX + 
-                                "," + data.pixelPositionY + ")";
+                                "(" + data.x + 
+                                "," + data.y + ")";
         }, "bundle");
     </script>
 </body>
