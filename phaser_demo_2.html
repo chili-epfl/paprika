@@ -23,14 +23,14 @@
 
 <body>
     <div id="leftColumn">
-        <h1>Crossroads Traffic Management</h1>
+        <h1>Traffic Management</h1>
         <p>Let the cars through the crossroads by controlling the traffic lights.
         <br>Control which lanes get a green light by orienting the crossroad cards. (tags 1, 3, 4, 5)
         <br>Coordinate the lights to get all cars through in the shortest time possible.
         <br>Don't let (too many) cars crash!
         <br>Reset the game by showing the reset card. (tag 2)</p>
         <p><img width="64px" src="img/viewmode_vertical_rotate.png"/>
-        This game is meant to be played on a desk, with the webcam pointing down.
+        This game is played on a surface, with the webcam pointing down.
         </p>
         <h2>Downloads</h2>
         <ul>
@@ -60,7 +60,7 @@ var game, cursors;
 var trafficLightNW, trafficLightNE, trafficLightSW, trafficLightSE;
 var cars, lanes, activeLane;
 var carsCollisionGroup;
-var crashSound, trafficSound;
+var crashSound, trafficSound, bgmusic;
 
 var orientations = new Object(); // angles of control cards in radians
 orientations.NW = -1;
@@ -150,8 +150,14 @@ function onGamePreload() {
     game.load.spritesheet("lightStatus", "img/lightStatus.png", 12, 12);
     game.load.spritesheet("car", "img/car.png", 32, 64);
     
+    // crash sound by Rock Savage http://www.freesound.org/people/Rock%20Savage/sounds/59263/
     game.load.audio("crash", "audio/crash_glass_short.wav");
+    
+    // traffic noise by Leossom: http://www.freesound.org/people/Leossom/sounds/169634/
     game.load.audio("traffic", "audio/city_traffic.mp3");
+    
+    // "One Hip Trip" by Danny Baranowsky: http://dbsoundworks.com/
+    game.load.audio("bgm", "audio/traffic_bgm_dbsoundworks.mp3");
 }
 
 function onGameCreate() {
@@ -165,9 +171,11 @@ function onGameCreate() {
     game.add.image(  0, 300, "background");
     game.add.image(300, 300, "background");
     
-    crashSound = game.add.audio("crash");
-    trafficSound = game.add.audio("traffic");
-    trafficSound.play("",0,1,true);
+    crashSound = game.add.audio("crash", 0.5);
+    trafficSound = game.add.audio("traffic", 1, true);
+    trafficSound.play();
+    bgmusic = game.add.audio("bgm", 0.25, true);
+    bgmusic.play();
 
 	trafficLightNW = newTrafficLight(      150,       150);
 	trafficLightNE = newTrafficLight(300 + 150,       150);
