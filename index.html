@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
@@ -10,99 +10,87 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+
     <title>Paprika by chili-epfl</title>
-  </head>
+</head>
+<body>
+<div id="container">
+<div class="inner">
 
-  <body>
-    <div id="container">
-      <div class="inner">
+<header>
+    <h1>Paprika</h1>
+    <h2>JavaScript framework for paper-based interaction in the browser</h2>
+</header>
 
-        <header>
-          <h1>Paprika</h1>
-          <h2>JavaScript framework for paper-based interaction in the browser</h2>
-        </header>
+<section id="downloads" class="clearfix">
+    <a href="https://github.com/chili-epfl/paprika/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+    <a href="https://github.com/chili-epfl/paprika/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+    <a href="https://github.com/chili-epfl/paprika" id="view-on-github" class="button"><span>View on GitHub</span></a>
+</section>
 
-        <section id="downloads" class="clearfix">
-          <a href="https://github.com/chili-epfl/paprika/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
-          <a href="https://github.com/chili-epfl/paprika/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
-          <a href="https://github.com/chili-epfl/paprika" id="view-on-github" class="button"><span>View on GitHub</span></a>
-        </section>
+<hr>
 
-        <hr>
+<section id="main_content">
+    <h2 id="presentation">Presentation</h2>
+    <p>Paprika is an experimental framework exploring paper-based interaction as input for browser applications. It uses <a href="https://github.com/chili-epfl/chilitags" target="_blank">Chilitags</a> fiducial markers in combination with <a href="http://threejs.org/" target="_blank">three.js</a> to detect and model the manipulation of paper elements like cards.
+    </p>
+    <p>The main goal of Paprika is to present an accessible abstraction model for paper interactions, allowing developers to easily work with augmented paper without prior knowledge of computer vision and the underlying technology at work.
+    </p>
 
-        <section id="main_content">
-<h2>
-<a name="presentation" class="anchor" href="#presentation"><span class="octicon octicon-link"></span></a>Presentation</h2>
+    <h2 id="content">Content</h2>
+    <ul>
+        <li>The main application code is contained within `js/paprika.js`</li>
+        <li>Basic usage examples for the different functions exist under `examples`</li>
+    </ul>
 
-<p>Paprika is an experimental framework exploring paper-based interaction as input for browser applications. It uses <a href="https://github.com/chili-epfl/chilitags" target="_blank">Chilitags</a> fiducial markers in combination with <a href="http://threejs.org/" target="_blank">three.js</a> to detect and model the manipulation of paper elements like cards.
-</p>
-<p>The main goal of Paprika is to present an accessible abstraction model for paper interactions, allowing developers to easily work with augmented paper without prior knowledge of computer vision and the underlying technology at work.
-</p>
+    <h2 id="games">Paprika Games</h2>
+    <p>The following games are build using Paprika input:
+    </p>
+    <ul>
+        <li><a href="phaser_demo_3.html">Asteroids Game</a>
+        </li>
+        <li><a href="phaser_demo_2.html">Traffic Management Game</a>
+        </li>
+        <li><a href="phaser_demo_1.html">Traffic &amp; Collisions Demo</a>
+        </li>
+    </ul>
 
-<h2>
-<a name="content" class="anchor" href="#content"><span class="octicon octicon-link"></span></a>Content</h2>
+    <h2 id="examples">Paprika Examples</h2>
+    <p>The following examples illustrate the usage of the different functions implemented in the framework:
+    </p>
+    <ul>
+        <li><a href="examples/paprika_onupdate.html">Paprika.onUpdate</a>
+        </li>
+        <li><a href="examples/paprika_bindposition.html">Paprika.bindPosition</a>
+        </li>
+        <li><a href="examples/paprika_bindorientation.html">Paprika.bindOrientation</a>
+        </li>
+        <li><a href="examples/paprika_onappear.html">Paprika.onAppear</a>
+        </li>
+        <li><a href="examples/paprika_bindtilt.html">Paprika.bindTilt</a>
+        </li>
+        <li><a href="examples/paprika_onorient.html">Paprika.onOrient</a>
+        </li>
+        <li><a href="examples/paprika_onflip.html">Paprika.onFlip</a>
+        </li>
+        <li><a href="examples/paprika_ontilt.html">Paprika.onTilt</a>
+        </li>
+        <li><a href="examples/paprika_bundletags.html">Paprika.bundleTags</a>
+        </li>
+        <!--
+        <li><a href="examples/paprika_">Paprika.</a>
+        </li>
+        -->
+    </ul>
+</section>
 
-<ul>
-    <li>The main application code is contained within `js/paprika.js`</li>
-    <li>Basic usage examples for the different functions exist under `examples`</li>
-</ul>
-            
-<h2>
-<a name="games" class="anchor" href="#games"><span class="octicon octicon-link"></span></a>Paprika Games</h2>
-<p>
-    The following games are build using Paprika input:
-</p>
-<ul>
-    <li><a href="phaser_demo_3.html">Asteroids Game</a>
-    </li>
-    <li><a href="phaser_demo_2.html">Traffic Management Game</a>
-    </li>
-<!--
-    <li><a href="phaser_demo_1.html">Crossroads Management demo</a>
-    </li>
--->
-</ul>
-            
-<h2>
-<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Paprika Examples</h2>
-<p>
-    The following examples illustrate the usage of the different functions implemented in the framework:
-</p>
-<ul>
-    <li><a href="examples/paprika_onupdate.html">Paprika.onUpdate</a>
-    </li>
-    <li><a href="examples/paprika_onappear.html">Paprika.onAppear and Paprika.onDisappear</a>
-    </li>
-    <li><a href="examples/paprika_onpositionupdate.html">Paprika.onPositionUpdate</a>
-    </li>
-    <li><a href="examples/paprika_onrotationupdate.html">Paprika.onRotationUpdate</a>
-    </li>
-    <li><a href="examples/paprika_onrotate.html">Paprika.onRotate</a>
-    </li>
-    <li><a href="examples/paprika_onorient.html">Paprika.onOrient</a>
-    </li>
-    <li><a href="examples/paprika_bundletags.html">Paprika.bundleTags</a>
-    </li>
-    <li><a href="examples/paprika_onflip.html">Paprika.onFlip</a>
-    </li>
-    <li><a href="examples/paprika_ontilt.html">Paprika.onTilt</a>
-    </li>
-    <li><a href="examples/paprika_ontiltupdate.html">Paprika.onTiltUpdate</a>
-    </li>
-<!--
-    <li><a href="examples/paprika_">Paprika.</a>
-    </li>
--->
-</ul>
-        </section>
+<hr>
 
-        <footer>
-          Paprika is maintained by <a href="https://github.com/chili-epfl">chili-epfl</a><br>
-          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
-        </footer>
+<footer>
+    Paprika is maintained by <a target="_blank" href="https://github.com/chili-epfl">chili-epfl</a><br>
+</footer>
 
-        
-      </div>
-    </div>
-  </body>
+</div>
+</div>
+</body>
 </html>
