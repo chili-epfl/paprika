@@ -285,16 +285,19 @@ var Paprika = Paprika || ( function () {
         var transformationMatrix = new THREE.Matrix4();
         transformationMatrix.set.apply(transformationMatrix, transformation);
 
-        var widthHalf = 320, heightHalf = 240;
+        var widthHalf = Math.floor(0.5*videoWidth), heightHalf = Math.floor(0.5*videoHeight);
 
         var vector = new THREE.Vector3();
         var projector = new THREE.Projector();
         projector.projectVector( vector.setFromMatrixPosition( transformationMatrix ), camera );
 
-        var pixelPosX = Math.round(( vector.x * widthHalf ) + widthHalf);
+        var pixelPosX = Math.round(  ( vector.x * widthHalf  ) + widthHalf);
         var pixelPosY = Math.round(- ( vector.y * heightHalf ) + heightHalf);
         
-        return { x:pixelPosX, y:pixelPosY };
+        return { x:pixelPosX,
+                 y:pixelPosY,
+                 viewX: vector.x,
+                 viewY: vector.y };
     }
     
     var getRotation = function(transformation, axis) {
@@ -316,6 +319,7 @@ var Paprika = Paprika || ( function () {
                 return angles.y;
                 break;
             case "z":
+            default:
                 angles.reorder('ZXY');
                 return angles.z;
         }
@@ -436,14 +440,16 @@ var Paprika = Paprika || ( function () {
         },
         
         // registers a function to call for every frame where `objectName` has been detected
-        onRotationUpdate : function(callback, objectName, axis) {
+        bindOrientation : function(callback, objectName, axis) {
+            axis = typeof axis !== "undefined" ? axis : "z";
+            
             var trigger = function(transformation) {
-                var rotation = getRotation(transformation, axis);
+                var orientation = getRotation(transformation, axis);
 
                 callback({
                     objectName:objectName,
                     transformation:transformation,
-                    rotation:rotation
+                    orientation:orientation
                     });
             };
             
@@ -455,15 +461,17 @@ var Paprika = Paprika || ( function () {
         },
         
         // registers a function to call for every frame where `objectName` has been detected
-        onPositionUpdate : function(callback, objectName, axis) {
+        bindPosition : function(callback, objectName) {
             var trigger = function(transformation) {
                 var position = getPixelPosition(transformation);
 
                 callback({
                     objectName:objectName,
                     transformation:transformation,
-                    pixelPositionX:position.x,
-                    pixelPositionY:position.y
+                    x:position.x,
+                    y:position.y,
+                    viewX:position.viewX,
+                    viewY:position.viewY
                     });
             };
             
@@ -475,7 +483,7 @@ var Paprika = Paprika || ( function () {
         },
         
         //registers a function to call for every frame where `objectName` has been deected
-        onTiltUpdate : function(callback, objectName) {
+        bindTilt : function(callback, objectName) {
             var trigger = function(transformation) {
                 var tmp = getTilt(transformation);
                 
@@ -496,7 +504,7 @@ var Paprika = Paprika || ( function () {
             return trigger;
         },
 
-        // registers a `callback`function to call when `objectName` has entered the view
+        // registers a `callback`function to call when `objectName` has entered/exited the view
         onAppear : function(callback, objectName) {
 
             // defines if object was present in previous frame
@@ -506,15 +514,24 @@ var Paprika = Paprika || ( function () {
             var trigger = function(objects) {
                 // compute current visibility
                 var isPresent = (objectName in objects);
+                
                 // detect if entered
                 if(!wasPresent && isPresent) {
                     var transformation = objects[objectName];
                     
                     callback({ 
                         objectName:objectName,
-                        transformation:transformation
+                        transformation:transformation,
+                        present:true
                         });
+                    // detect if exited
+                } else if(!isPresent && wasPresent) {
+                    callback({
+                        objectName:objectName,
+                        present:false
+                    });
                 }
+                
                 // save current visibility
                 wasPresent = isPresent;
             };
@@ -522,79 +539,6 @@ var Paprika = Paprika || ( function () {
 
             // we add this trigger to the list of callbacks
             updateCallbacks.push(trigger);
-
-            return trigger;
-        },
-
-        // registers a `callback`function to call when `objectName` has exited the view
-        onDisappear : function(callback, objectName) {
-
-            // defines if object was present in previous frame
-            var wasPresent = false;
-
-            // the logic computing whether or not calling `callback`
-            var trigger = function(objects) {
-                // compute current visibility
-                var isPresent = (objectName in objects);
-                // detect if exited
-                if(!isPresent && wasPresent) callback( {objectName:objectName} );
-                // save current visibility
-                wasPresent = isPresent;
-            };
-            trigger.reset = function() { wasPresent = false; }
-
-            // we add this trigger to the list of callbacks
-            updateCallbacks.push(trigger);
-
-            return trigger;
-        },
-
-        // registers a `callback` function to call when `objectName` has been rotated
-        // by at least `minDelta` radians
-        onRotate : function(callback, objectName, minDelta) {
-
-            // stores the initial orientation to compare against
-            var previousOrientation = undefined;
-
-            // the logic computing whether or not calling `callback` when an object's
-            // transformation matrix has been updated
-            var trigger = function(transformation) {
-                // compute the euler angles of the transformation
-                var orientation = getRotation(transformation, "z");
-
-                // initialisation of previousOrientation
-                if (previousOrientation === undefined) {
-                    previousOrientation = orientation;
-
-                    callback({
-                        objectName:objectName,
-                        transformation:transformation,
-                        orientation:orientation,
-                        delta:0});
-                }
-
-                // computing the rotation since `previousOrientation`,
-                // and normalizing in ]-Math.PI, Math.PI]
-                var delta = orientation-previousOrientation;
-                while (delta >   Math.PI) delta -= 2*Math.PI;
-                while (delta <= -Math.PI) delta += 2*Math.PI;
-
-                // if the rotation is beyond the minDelta threshold, call the callback
-                // and reset the reference orientation (previousOrientation)
-                if (Math.abs(delta) > minDelta) {
-                    callback({
-                        objectName:objectName,
-                        transformation:transformation,
-                        orientation:orientation,
-                        delta:delta});
-                    previousOrientation = orientation;
-                }
-            };
-            trigger.reset = function() { previousOrientation = undefined; }
-
-            // we add this trigger to the list of callbacks related to `objectName`
-            if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
-            else objectCallbacks[objectName] = [trigger];
 
             return trigger;
         },
@@ -637,15 +581,15 @@ var Paprika = Paprika || ( function () {
                 if (   !isIn && delta < epsilon
                     ||  isIn && delta > epsilon) {
                     isIn = !isIn;
-                    if (isIn) {
-                        triggeringOrientation = orientation;
-                        callback({
-                            objectName:objectName,
-                            transformation:transformation,
-                            orientation:orientation,
-                            goalOrientation:goalOrientation,
-                            hasEntered:isIn});
-                    }
+                    
+                    triggeringOrientation = orientation;
+                    callback({
+                        objectName:objectName,
+                        transformation:transformation,
+                        orientation:orientation,
+                        goalOrientation:goalOrientation,
+                        oriented:isIn
+                    });
                 }
             };
             trigger.reset = function() { isIn = false; }
@@ -776,6 +720,7 @@ var Paprika = Paprika || ( function () {
             return false;
         },
 
+        // card definition
         bundleTags : function(bundles) {
             worker.run({type: "bundle", bundles: bundles});
         }

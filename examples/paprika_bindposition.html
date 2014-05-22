@@ -20,7 +20,7 @@
 
 <body>
         <h1>Paprika examples</h1>
-        <h2>Paprika.onPositionUpdate(callback, objectName)</h2>
+        <h2>Paprika.bindPosition(callback, objectName)</h2>
         <h3>Uses tags: tag_1</h3>
     
     <div id="leftColumn">
@@ -48,13 +48,13 @@
         
         Paprika.start("videoFrame");
 
-        Paprika.onPositionUpdate(function(data) {
-            tagDiv.style.left = data.pixelPositionX + "px";
-            tagDiv.style.top = data.pixelPositionY + "px";
+        Paprika.bindPosition(function(data) {
+            tagDiv.style.left = data.x + "px";
+            tagDiv.style.top = data.y + "px";
             
             tagText.nodeValue = "\n\n\n" + data.objectName + 
-                                "(" + data.pixelPositionX + 
-                                "," + data.pixelPositionY + ")";
+                                "(" + data.x + 
+                                "," + data.y + ")";
         }, "tag_1");
     </script>
 </body>
