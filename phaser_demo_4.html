@@ -1,0 +1,348 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+	<style>
+        #leftColumn {
+            float:left;
+            margin-right: 20px;
+            width: 600px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #gameFrame {
+            width: 600px;
+            height: 600px;
+            float: left;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+        }
+	</style>
+</head>
+
+<body> 
+    <div id="leftColumn">
+        <h1>Ball Maze</h1>
+        <p>Reach the goal as fast as you can!
+        <br>Try not to bump into walls!
+        <br>Control the ball by tilting the controller card. (tags 14, 15, 16)
+        <br>Reset the game by showing the reset card. (tag 2)</p>
+        <p><img width="64px" src="img/viewmode_horizontal_flip.png"/>
+        This game is played by holding the cards in front of the webcam.
+        </p>
+        <h2>Downloads</h2>
+        <ul>
+            <li><a target="_blank" href="print/phaser_demo_4.pdf">PDF file with cards</a></li>
+            <li><a target="_blank" href="print/phaser_demo_4_controller.png">PNG image of controller card</a></li>
+            <li><a target="_blank" href="print/phaser_demo_3_asteroids_card_reset.png">PNG image of reset card.</a></li>
+        </ul>
+
+        <div id="videoFrame"></div>
+        <div id="fps"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="gameFrame"></div>
+    </div>
+
+	<script src="js/three.min.js"></script>
+	<script src="js/phaser.min.js"></script>
+    <script src="js/paprika.js"></script>
+	
+<script>
+// Phaser variables
+var game;
+var hole;
+var walls;
+var ball;
+var force = 200;
+var angle = 0;      // angle of normal, range [0,2*pi]
+var tilt = 0;       // inclination of nomral, range [0,1]
+var updateBall = false;
+var bumpTime = 0.25;
+var lastBump;
+var bumpSound, bgmusic;
+
+var gameStartTime = 4;
+var bumpsCount = 0;
+var startTime, finalTime;
+var startScreenTime = 4;
+var startEndGraphics, startEndText;
+
+var scoreText, timeText;
+
+game = new Phaser.Game(300,300,Phaser.AUTO, "gameFrame", {preload:onGamePreload, create:onGameCreate, update:onGameUpdate, render:onGameRender});
+
+// chilitags variables
+var fpsText, start;
+var belowViewCard = {};
+var tagReset = "tag_2";
+var paprikaTriggers = [];
+
+function initPaprikaEvents() {
+    Paprika.start("videoFrame", null, true, 0.5);
+    
+    // chilitags info
+    fpsText = document.createTextNode('');
+    document.getElementById('fps').appendChild(fpsText);
+
+    start = new Date();
+
+    Paprika.onUpdate(function(objects) {
+        var end = new Date();
+
+        var str = 'Objects: ';
+        for(var obj in objects){
+            str += obj + "(" +objects[obj][3]+ ")" + " ";
+        }
+        fpsText.nodeValue = "Chilitags processing = " + (end.getTime() - start.getTime()) + "ms." + str;
+        start = end;
+    });
+    
+    // card to be seen from below (laptop webcam setup)
+    belowViewCard[14] = {size: 20, translation: [  0, -30, 0]};
+    belowViewCard[15] = {size: 20, translation: [-30,  30, 0]};
+    belowViewCard[16] = {size: 20, translation: [ 30,  30, 0]};
+    
+    Paprika.bundleTags({belowViewCard:belowViewCard});
+    Paprika.bindTilt(moveBall, "belowViewCard");
+    
+    // restart game
+    Paprika.onAppear(resetGame, tagReset);
+}
+
+function onGamePreload() {
+    // loading assets
+	game.stage.backgroundColor = '#888888';
+    game.stage.smoothed = false;
+    game.scale.maxWidth = 600;
+    game.scale.maxHeight = 600;
+
+    //  scale up proportionally
+    this.game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    this.game.scale.setScreenSize(true);
+    
+    game.load.image("background", "img/ballmaze_bg.png");
+    game.load.spritesheet("ball", "img/ballmaze_ball.png", 16, 16);
+    game.load.image("hole", "img/ballmaze_hole.png");
+    game.load.image("wall", "img/ballmaze_wall.png");
+    
+    // bump sound by timgormly : https://www.freesound.org/people/timgormly/sounds/170141/
+    game.load.audio("bump", "audio/ballmaze_bump.wav");
+    
+    // "One Hip Trip" by Danny Baranowsky: http://dbsoundworks.com/
+    game.load.audio("bgm", "audio/traffic_bgm_dbsoundworks.mp3");
+}
+
+function onGameCreate() {
+    //  Enable P2 physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
+//    game.physics.p2.setImpactEvents(true);
+    game.physics.p2.restitution = 0.5;
+    carsCollisionGroup = game.physics.p2.createCollisionGroup();
+    
+    bumpSound = game.add.audio("bump");
+    bgmusic = game.add.audio("bgm", 0.25, true);
+    bgmusic.play();
+    
+    game.add.image(0, 0, "background");
+    
+    initHole();
+    initWalls();
+    
+    game.time.events.add( Phaser.Timer.SECOND * gameStartTime, initBall, this);
+    
+    initPaprikaEvents();
+    
+    scoreText = game.add.text(5, 5, "", { font: "12px Impact", fill: "#ffffff", align: "left" });
+    timeText = game.add.text(5, 18, "", { font: "12px Impact", fill: "#ffffff", align: "center" });
+    
+    startEndGraphics = game.add.graphics(0, 0);
+    startEndGraphics.beginFill(0x000000);
+    startEndGraphics.drawRect(0, 0, game.width, game.height);
+    startEndText = game.add.text(80, 20 + 0.25 * game.height, "", { font: "32px Impact", fill: "#ffffff", align: "center" });
+    
+    lastBump = game.time.now;
+    
+    startScreen();
+}
+
+function resetGame() {
+    ball.kill();
+    angle = 0;
+    tilt = 0;
+    bumpsCount = 0;
+    lastBump = game.time.now;
+    
+    startScreen();
+    
+    paprikaTriggers.forEach(function(trigger) {
+        trigger.reset();
+    });
+    
+    game.time.events.add( Phaser.Timer.SECOND * gameStartTime, resetBall, this);
+}
+    
+function startScreen() {
+    startTime = game.time.now;
+    finalTime = Number.MAX_VALUE;
+    
+    startEndGraphics.alpha = 0.5;
+    
+    game.time.events.repeat(Phaser.Timer.SECOND, startScreenTime, function() {
+        startEndText.setText("Ball Maze \nwill start in:\n" +
+                            Math.round(startScreenTime - game.time.elapsedSecondsSince(startTime)));
+    }, this);
+    
+    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, function() {
+        startEndGraphics.alpha = 0;
+        startEndText.setText("");
+    }, this);
+}
+
+function endScreen() {
+    finalTime = Math.min(finalTime, Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime));
+    
+    startEndGraphics.alpha = 0.5;
+    startEndText.setText( "Bumps: " + bumpsCount +
+                          "\nTime: " + finalTime + " sec.");
+    
+    game.time.events.add(Phaser.Timer.SECOND * startScreenTime, resetGame);
+}
+    
+function updateScore() {
+    scoreText.setText("Bumps: " + bumpsCount);
+    
+    var time = Math.round(game.time.elapsedSecondsSince(startTime) - startScreenTime);
+    
+    timeText.setText("Time: " + (time > 0 ? time : "") );
+}
+
+function onGameRender() {
+}
+
+// game logic
+    
+function initWalls() {
+    walls = this.game.add.group();            
+    
+    newWall(0,0, true);
+    newWall(1,0, true);
+    newWall(4,0, true);
+    newWall(0,1, true);
+    newWall(2,1, true);
+    newWall(3,1, true);
+    newWall(1,2, true);
+    newWall(3,2, true);
+    newWall(0,3, true);
+    newWall(1,3, true);
+    newWall(3,3, true);
+    newWall(4,3, true);
+    newWall(5,3, true);
+    newWall(1,4, true);
+    newWall(2,4, true);
+    newWall(4,4, true);
+    
+    newWall(0,2, false);
+    newWall(1,1, false);
+    newWall(2,0, false);
+    newWall(2,4, false);
+    newWall(3,1, false);
+    newWall(3,3, false);
+    newWall(4,1, false);
+    newWall(4,2, false);
+    newWall(4,5, false);
+    
+}
+
+function newWall(i, j, horizontal) {
+    var x = horizontal ? 25 + i * 50 : (i+1)  * 50;
+    var y = horizontal ? (j+1)  * 50 : 25 + j * 50;
+    
+    var wall = walls.create(x, y, "wall");
+    wall.anchor.setTo(0.5, 0.5);
+
+    game.physics.p2.enable(wall);
+    wall.body.static = true;
+//    wall.body.setRectangle(46, 6, 1, 1);
+
+    if(!horizontal) wall.body.angle = 90;
+        
+    }
+
+function initHole() {
+    hole = game.add.sprite(300 - 16, 300 - 16, "hole");
+    hole.anchor.setTo(0.5, 0.5);
+    
+    game.physics.p2.enable(hole);
+    hole.body.static = true;
+    hole.body.setCircle(1);
+    }
+
+function initBall() {
+    ball = game.add.sprite(16, 16, "ball");
+    ball.animations.add("normal", [0]);
+    ball.animations.add("bump", [1, 0], 8);
+    ball.anchor.setTo(0.5, 0.5);
+    
+    game.physics.p2.enable(ball);
+    ball.body.fixedRotation = true;
+    ball.body.setCircle(8);
+    ball.body.damping = 0.5;
+    
+    ball.animations.play("normal");
+    ball.body.onBeginContact.add(ballInHole, this);
+}
+
+function resetBall() {
+    ball.revive();
+    ball.body.x = 16;
+    ball.body.y = 16;
+    ball.body.setZeroVelocity();
+}
+
+function ballInHole(body, shapeA, shapeB, equation) {
+    if(body && body.sprite == hole){
+        ball.kill();
+        endScreen();
+    } else if(game.time.elapsedSecondsSince(lastBump) > bumpTime) {
+        lastBump = game.time.now;
+        ++bumpsCount;
+        ball.animations.play("bump");
+        bumpSound.play();
+    }
+}
+
+function updateBallSpeed() {
+    ball.body.velocity.x += force * tilt * Math.cos(angle);
+    ball.body.velocity.y += force * tilt * Math.sin(angle);
+    
+    updateBall = false;
+}
+
+function moveBall(data) {
+    angle = 2 * Math.PI - data.orientation;
+    tilt = data.tilt * 2 / Math.PI;
+    
+    updateBall = true;
+}
+    
+function onGameUpdate() {    
+    var move = false;
+    
+    if(updateBall) {
+        updateBallSpeed();
+    }
+    
+    updateScore();
+}
+</script>
+</body>
+</html>
