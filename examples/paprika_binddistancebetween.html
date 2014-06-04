@@ -20,7 +20,7 @@
 
 <body>
         <h1>Paprika examples</h1>
-        <h2>Paprika.bindDistanceBetween(callback, objectName1, objectName2)</h2>
+        <h2>Paprika.bindDistance(callback, objectName1, objectName2)</h2>
         <h3>Uses tags: tag_1, tag_2</h3>
     
     <div id="leftColumn">
@@ -58,7 +58,7 @@
         
         Paprika.start("videoFrame");
 
-        Paprika.bindDistanceBetween(function(data) {
+        Paprika.bindDistance(function(data) {
             tagDiv1.style.left = data.x1 + "px";
             tagDiv1.style.top = data.y1 + "px";
             
