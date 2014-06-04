@@ -300,6 +300,10 @@ var Paprika = Paprika || ( function () {
                  viewY: vector.y };
     }
     
+    var getPixelDistance = function(x1, y1, x2, y2) {
+        return Math.round(Math.sqrt( Math.abs(x1 - x2)*Math.abs(x1 - x2) + Math.abs(y1 - y2)*Math.abs(y1 - y2) ));
+    }
+    
     var getRotation = function(transformation, axis) {
         // format the transformationMatrix into a THREE.Matrix4
         var transformationMatrix = new THREE.Matrix4();
@@ -482,6 +486,65 @@ var Paprika = Paprika || ( function () {
             return trigger;
         },
         
+        // registers a function to call for...
+        bindDistance : function(callback, objectName, arg2, arg3) {
+            if(typeof arg2 === "number" && typeof arg2 === "number") {
+                // ... every frame where `objectName` has been detected
+                // arg2 and arg3 are pixel coordinates
+                var trigger = function(transformation) {
+                    var position = getPixelPosition(transformation);
+                    var distance = getPixelDistance(position.x, position.y, arg2, arg3);
+
+                    callback({
+                        objectName:objectName,
+                        transformation:transformation,
+                        x:position.x,
+                        y:position.y,
+                        goalX:arg2,
+                        goalY:arg3,
+                        distance:distance
+                        });
+                };
+
+                // we add this trigger to the list of callbacks related to `objectName`
+                if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+                else objectCallbacks[objectName] = [trigger];
+
+                return trigger;
+            
+            } else if(typeof arg3 === "undefined") {
+                // ... every frame
+                // arg2 is the second object
+                var trigger = function(objects) {
+                    if(objectName in objects && arg2 in objects) {
+                        var transformation1 = objects[objectName];
+                        var transformation2 = objects[arg2];
+
+                        var position1 = getPixelPosition(transformation1);
+                        var position2 = getPixelPosition(transformation2);
+                        var distance = getPixelDistance(position1.x, position1.y, position2.x, position2.y);
+
+                        callback({
+                            objectName1:objectName,
+                            objectName2:arg2,
+                            transformation1:transformation1,
+                            transformation2:transformation2,
+                            x1:position1.x,
+                            y1:position1.y,
+                            x2:position2.x,
+                            y2:position2.y,
+                            distance:distance
+                            });
+                    }
+                };
+
+                // we add this trigger to the list of callbacks
+                updateCallbacks.push(trigger);
+
+                return trigger;
+            }
+        },
+        
         //registers a function to call for every frame where `objectName` has been deected
         bindTilt : function(callback, objectName) {
             var trigger = function(transformation) {
@@ -541,6 +604,96 @@ var Paprika = Paprika || ( function () {
             updateCallbacks.push(trigger);
 
             return trigger;
+        },
+        
+        // registers a `callback` function to call when...
+        onApproach : function(callback, objectName, arg2, arg3, arg4) {
+            if(typeof arg2 === "number" && typeof arg3 === "number") {
+                // ... `objectName` is within +/- `arg4` pixels from (`arg2`, `arg3`).
+                // arg2, arg3 are pixel coordinates
+                // arg4 is the radius
+
+                // keeps track of whether the object is already within the target radius
+                var isIn = false;
+
+                // same as onRotate...
+                var trigger = function(transformation) {
+                    // compute the pixel position of the transformation
+                    var position = getPixelPosition(transformation);
+                    var distance = getPixelDistance(position.x, position.y, arg2, arg3);
+
+                    // if the object is positionned as expected but wasn't before, or vice
+                    // versa, we switch the state storing whether the goal is reached, and
+                    // we call the callback
+                    if (   !isIn && distance < arg4
+                        ||  isIn && distance > arg4) {
+                        isIn = !isIn;
+
+                        callback({
+                            objectName:objectName,
+                            transformation:transformation,
+                            x:position.x,
+                            y:position.y,
+                            goalX:arg2,
+                            goalY:arg3,
+                            distance:distance,
+                            radius:arg4,
+                            entered:isIn
+                        });
+                    }
+                };
+                trigger.reset = function() { isIn = false; }
+
+                // we add this trigger to the list of callbacks related to `objectName`
+                if (objectName in objectCallbacks) objectCallbacks[objectName].push(trigger);
+                else objectCallbacks[objectName] = [trigger];
+
+                return trigger;
+            } else if(typeof arg4 === "undefined") {
+                // ... `objectName` and `arg2` are within +/- `arg3` pixels from each other.
+                // arg2 is the second object
+                // arg3 is the radius
+
+                // keeps track of whether the object is already within the target radius
+                var areIn = false;
+
+                // same as onRotate...
+                var trigger = function(objects) {
+                     if(objectName in objects && arg2 in objects) {
+                        var transformation1 = objects[objectName];
+                        var transformation2 = objects[arg2];
+
+                        var position1 = getPixelPosition(transformation1);
+                        var position2 = getPixelPosition(transformation2);
+                        var distance = getPixelDistance(position1.x, position1.y, position2.x, position2.y);
+
+                        if (   !areIn && distance < arg3
+                            ||  areIn && distance > arg3) {
+                            areIn = !areIn;
+
+                            callback({
+                                objectName1:objectName,
+                                objectName2:arg2,
+                                transformation1:transformation1,
+                                transformation2:transformation2,
+                                x1:position1.x,
+                                y1:position1.y,
+                                x2:position2.x,
+                                y2:position2.y,
+                                distance:distance,
+                                radius:arg3,
+                                entered:areIn
+                                });
+                        }
+                    }
+                };
+                trigger.reset = function() { areIn = false; }
+
+                // we add this trigger to the list of callbacks
+                updateCallbacks.push(trigger);
+
+                return trigger;
+            }
         },
 
         // registers a `callback` function to call when `objectName` is within +/-

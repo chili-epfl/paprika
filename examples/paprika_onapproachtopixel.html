@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #exampleFrame {
+            width: 640px;
+            height: 480px;
+            background-color: #AAAABB;
+        }
+	</style>
+</head>
+
+<body>
+        <h1>Paprika examples</h1>
+        <h2>Paprika.onApproach(callback, objectName, goalX, goalY, radius)</h2>
+        <h3>Uses tags: tag_1</h3>
+    
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var exampleFrame = document.getElementById("exampleFrame");
+        var tagText = document.createTextNode('');
+        var tagDiv = document.createElement("div");
+        tagDiv.style.textAlign = "center";
+        tagDiv.style.position = "relative";
+        tagDiv.style.height = "40px";
+        tagDiv.style.width = "160px";
+        tagDiv.style.backgroundColor= "#55FF55";
+        tagDiv.appendChild(tagText);
+        exampleFrame.appendChild(tagDiv);
+        
+        Paprika.start("videoFrame");
+        
+        Paprika.onApproach(function(data) {
+            if(data.entered) {
+                exampleFrame.style.backgroundColor = "#DDDDDD";
+            } else {
+                exampleFrame.style.backgroundColor = "#222222";
+            }
+            distance = data.distance;
+        }, "tag_1", 320, 240, 100);
+
+        Paprika.bindDistance(function(data) {
+            tagDiv.style.left = data.x + "px";
+            tagDiv.style.top = data.y + "px";
+            
+            tagText.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.x + 
+                                "," + data.y + ")" +
+                                "\ndistance to (320, 240): " + data.distance;
+        }, "tag_1", 320, 240);
+    </script>
+</body>
+</html>
