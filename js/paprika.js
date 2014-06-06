@@ -695,6 +695,87 @@ var Paprika = Paprika || ( function () {
                 return trigger;
             }
         },
+        
+        // registers a `callback` function to call when...
+        onStack : function(callback, objectName1, objectName2, radius) {
+            // keeps track of whether the object is already within the target radius
+            var wasVisible1 = false;
+            var wasVisible2 = false;
+            var inReach  = false; // close enough to stach
+            var stacked = false;
+
+            // same as onRotate...
+            var trigger = function(objects) {
+                if( !stacked && !inReach) {
+                    // case 1: not stacked, not close
+                    // updated status
+                    wasVisible1 = objectName1 in objects;
+                    wasVisible2 = objectName2 in objects;
+                    
+                    if(wasVisible1 && wasVisible2) {
+                    var transformation1 = objects[objectName1];
+                    var transformation2 = objects[objectName2];
+
+                    var position1 = getPixelPosition(transformation1);
+                    var position2 = getPixelPosition(transformation2);
+                    var distance = getPixelDistance(position1.x, position1.y, position2.x, position2.y);
+                    
+                    inReach = distance < radius;
+                    }
+                } else if (!stacked && inReach) {
+                    // case 2: not stacked, but in range
+                    if(  wasVisible1 && wasVisible2 ) {
+                        // both must have been visible pre-stacking
+                        var isVisible1 = objectName1 in objects;
+                        var isVisible2 = objectName2 in objects;
+                        
+                        // check for stack condition
+                        stacked = isVisible1 && !isVisible2 || isVisible2 && !isVisible1;
+                        
+                        if(stacked) {
+                            wasVisible1 = isVisible1;
+                            wasVisible2 = isVisible2;
+                            
+                            callback({
+                                objectName1:objectName1,
+                                objectName2:objectName2,
+                                onTop: (wasVisible1 ? objectName1 : objectName2),
+                                stacked:stacked
+                            });
+                        }
+                    }
+                } else if (stacked) {
+                    // case 3: previously stacked
+                    var isVisible1 = objectName1 in objects;
+                    var isVisible2 = objectName2 in objects;
+                    
+                    // check for stack condition
+                    stacked = isVisible1 && !isVisible2 || isVisible2 && !isVisible1;
+                    
+                    if(!stacked) {
+                        inReach = false; // force reevaluation of distance in next step
+                        
+                        callback({
+                                objectName1:objectName1,
+                                objectName2:objectName2,
+                                stacked:stacked
+                            });
+                    }
+                }
+            };
+
+            trigger.reset = function() {
+                var wasVisible1 = false;
+                var wasVisible2 = false;
+                var inReach  = false;
+                var stacked = false;
+            }
+
+            // we add this trigger to the list of callbacks
+            updateCallbacks.push(trigger);
+
+            return trigger;
+        },
 
         // registers a `callback` function to call when `objectName` is within +/-
         // `epsilon` radians from `goalOrientation`, and when the orientation of
