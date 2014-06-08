@@ -703,6 +703,8 @@ var Paprika = Paprika || ( function () {
             var wasVisible2 = false;
             var inReach  = false; // close enough to stach
             var stacked = false;
+            var onTop;
+            var onBottom;
 
             // same as onRotate...
             var trigger = function(objects) {
@@ -735,31 +737,36 @@ var Paprika = Paprika || ( function () {
                         if(stacked) {
                             wasVisible1 = isVisible1;
                             wasVisible2 = isVisible2;
+                            onTop = wasVisible1 ? objectName1 : objectName2;
+                            onBottom = wasVisible1 ? objectName2 : objectName1;
                             
                             callback({
                                 objectName1:objectName1,
                                 objectName2:objectName2,
-                                onTop: (wasVisible1 ? objectName1 : objectName2),
+                                onTop: onTop,
                                 stacked:stacked
                             });
                         }
                     }
                 } else if (stacked) {
                     // case 3: previously stacked
-                    var isVisible1 = objectName1 in objects;
-                    var isVisible2 = objectName2 in objects;
-                    
-                    // check for stack condition
-                    stacked = isVisible1 && !isVisible2 || isVisible2 && !isVisible1;
-                    
-                    if(!stacked) {
-                        inReach = false; // force reevaluation of distance in next step
+                    if(onBottom in objects) {
+                        // consider stacked until bottom card is visible again
+                        var isVisible1 = objectName1 in objects;
+                        var isVisible2 = objectName2 in objects;
                         
-                        callback({
-                                objectName1:objectName1,
-                                objectName2:objectName2,
-                                stacked:stacked
-                            });
+                        // check for stack condition
+                        stacked = isVisible1 && !isVisible2 || isVisible2 && !isVisible1;
+
+                        if(!stacked) {
+                            inReach = false; // force reevaluation of distance in next step
+
+                            callback({
+                                    objectName1:objectName1,
+                                    objectName2:objectName2,
+                                    stacked:stacked
+                                });
+                        }
                     }
                 }
             };
