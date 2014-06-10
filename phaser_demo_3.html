@@ -129,21 +129,21 @@ function initPaprikaEvents() {
 
     // card to be seen from above (desktop webcam setup)
     // white side
-    aboveViewCard[10] = {size: 20, translation: [-17.5, -30, 0]};
-    aboveViewCard[11] = {size: 20, translation: [ 17.5,  30, 0]};
+    aboveViewCard[10] = {size: 20, dx: -17.5, dy: -30};
+    aboveViewCard[11] = {size: 20, dx:  17.5, dy:  30};
     // black side
-    aboveViewCard[12] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
-    aboveViewCard[13] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
+    aboveViewCard[12] = {size: 20, dx: -17.5, dy: -30, back:true};
+    aboveViewCard[13] = {size: 20, dx:  17.5, dy:  30, back:true};
     
     // card to be seen from below (laptop webcam setup)
     // white side
-    belowViewCard[6] = {size: 20, translation: [-17.5, -30, 0]};
-    belowViewCard[7] = {size: 20, translation: [ 17.5,  30, 0]};
+    belowViewCard[6] = {size: 20, dx: -17.5, dy: -30};
+    belowViewCard[7] = {size: 20, dx:  17.5, dy:  30};
     // black side
-    belowViewCard[8] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
-    belowViewCard[9] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
+    belowViewCard[8] = {size: 20, dx: -17.5, dy: -30, back:true};
+    belowViewCard[9] = {size: 20, dx:  17.5, dy:  30, back:true};
     
-    Paprika.bundleTags({aboveViewCard:aboveViewCard, belowViewCard:belowViewCard});
+    Paprika.defineCards({aboveViewCard:aboveViewCard, belowViewCard:belowViewCard});
     
     // detect change in tag rotation
     Paprika.bindOrientation(inputRotate, "aboveViewCard");
