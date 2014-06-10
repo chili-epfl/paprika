@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #exampleFrame {
+            width: 640px;
+            height: 480px;
+            background-color: #AAAABB;
+        }
+	</style>
+</head>
+
+<body>
+        <h1>Paprika examples</h1>
+        <h2>Paprika.bundleTags(bundle)</h2>
+        <h3>Uses tags: tag_6, tag_7</h3>
+    
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var exampleFrame = document.getElementById("exampleFrame");
+        
+        var tag1Text = document.createTextNode('');
+        var tag1Div = document.createElement("div");
+        tag1Div.style.textAlign = "center";
+        tag1Div.style.position = "relative";
+        tag1Div.style.height = "20px";
+        tag1Div.style.width = "120px";
+        tag1Div.style.backgroundColor= "#55FF55";
+        tag1Div.appendChild(tag1Text);
+        exampleFrame.appendChild(tag1Div);
+        
+        var tag2Text = document.createTextNode('');
+        var tag2Div = document.createElement("div");
+        tag2Div.style.textAlign = "center";
+        tag2Div.style.position = "relative";
+        tag2Div.style.height = "20px";
+        tag2Div.style.width = "120px";
+        tag2Div.style.backgroundColor= "#55FF55";
+        tag2Div.appendChild(tag2Text);
+        exampleFrame.appendChild(tag2Div);
+        
+        var bundleText = document.createTextNode('');
+        var bundleDiv = document.createElement("div");
+        bundleDiv.style.textAlign = "center";
+        bundleDiv.style.position = "relative";
+        bundleDiv.style.height = "20px";
+        bundleDiv.style.width = "120px";
+        bundleDiv.style.backgroundColor= "#55FF55";
+        bundleDiv.appendChild(bundleText);
+        exampleFrame.appendChild(bundleDiv);
+        
+        Paprika.start("videoFrame");
+        
+        bundle = {};
+        bundle[6] = {size: 20, translation: [-17.5, -30, 0], keep: 1};
+        bundle[7] = {size: 20, translation: [ 17.5,  30, 0], keep: 1};
+
+        Paprika.bundleTags({bundle:bundle});
+
+        Paprika.bindPosition(function(data) {
+            tag1Div.style.left = data.x + "px";
+            tag1Div.style.top = data.y + "px";
+            
+            tag1Text.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.x + 
+                                "," + data.y + ")";
+        }, "tag_6");
+
+        Paprika.bindPosition(function(data) {
+            tag2Div.style.left = data.x + "px";
+            tag2Div.style.top = data.y + "px";
+            
+            tag2Text.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.x + 
+                                "," + data.y + ")";
+        }, "tag_7");
+
+        Paprika.bindPosition(function(data) {
+            bundleDiv.style.left = data.x + "px";
+            bundleDiv.style.top = data.y + "px";
+            
+            bundleText.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.x + 
+                                "," + data.y + ")";
+        }, "bundle");
+    </script>
+</body>
+</html>
