@@ -185,14 +185,19 @@ var Paprika = Paprika || ( function () {
             for (var tagId in bundle) {
                 configFile += '  - tag: '+tagId+'\n';
                 var tagInfo = bundle[tagId];
-                if ("size" in tagInfo) 
+                
+                if("size" in tagInfo) {
                     configFile += '    size: '+tagInfo["size"]+'\n';
-                if ("translation" in tagInfo) 
-                    configFile += '    translation: ['+tagInfo["translation"]+']\n';
-                if ("rotation" in tagInfo) 
-                    configFile += '    rotation: ['+tagInfo["rotation"]+']\n';
-                if ("keep" in tagInfo) 
-                    configFile += '    keep: '+tagInfo["keep"]+'\n';
+                }
+                if("dx" in tagInfo && "dy" in tagInfo) {
+                    configFile += '    translation: ['+tagInfo['dx']+','+tagInfo['dy']+',0]\n';
+                }
+                if("back" in tagInfo && tagInfo["back"]) {
+                    configFile += '    rotation: [0,180,0]\n';
+                }
+                if ("keep" in tagInfo && tagInfo["keep"]) {
+                    configFile += '    keep: 1\n';
+                }
             }
         }
         FS.createDataFile("/", "tagConfig.yml", configFile, true, true);
@@ -962,8 +967,8 @@ var Paprika = Paprika || ( function () {
         },
 
         // card definition
-        bundleTags : function(bundles) {
-            worker.run({type: "bundle", bundles: bundles});
+        defineCards : function(cards) {
+            worker.run({type: "bundle", bundles: cards});
         }
     }
 
