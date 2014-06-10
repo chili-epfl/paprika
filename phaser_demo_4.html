@@ -103,11 +103,11 @@ function initPaprikaEvents() {
     });
     
     // card to be seen from below (laptop webcam setup)
-    belowViewCard[14] = {size: 20, translation: [  0, -30, 0]};
-    belowViewCard[15] = {size: 20, translation: [-30,  30, 0]};
-    belowViewCard[16] = {size: 20, translation: [ 30,  30, 0]};
+    belowViewCard[14] = {size: 20, dx:   0, dy: -30};
+    belowViewCard[15] = {size: 20, dx: -30, dy:  30};
+    belowViewCard[16] = {size: 20, dx:  30, dy:  30};
     
-    Paprika.bundleTags({belowViewCard:belowViewCard});
+    Paprika.defineCards({belowViewCard:belowViewCard});
     Paprika.bindTilt(moveBall, "belowViewCard");
     
     // restart game

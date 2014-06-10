@@ -57,12 +57,11 @@
         
         Paprika.start("videoFrame");
         
-        var bundle = {};
-        // white side
-        bundle[6] = {size: 20, translation: [-17.5, -30, 0]};
-        bundle[7] = {size: 20, translation: [ 17.5,  30, 0]};
+        var card = {};
+        card[6] = {size: 20, dx: -17.5, dy: -30};
+        card[7] = {size: 20, dx:  17.5, dy:  30};
 
-        Paprika.bundleTags({bundle:bundle});
+        Paprika.defineCards({card:card});
 
         Paprika.bindTilt(function(data) {
             tagDiv.style["transform"] = "rotate(" + data.orientation + "rad)";
@@ -76,7 +75,7 @@
             console.log("objectName: " + data.objectName +
                         ", tilt: " + data.tilt + 
                         ", orientation: " + data.orientation);
-        }, "bundle");
+        }, "card");
     </script>
 </body>
 </html>
