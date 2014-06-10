@@ -69,11 +69,11 @@
         
         Paprika.start("videoFrame");
         
-        bundle = {};
-        bundle[6] = {size: 20, translation: [-17.5, -30, 0], keep: 1};
-        bundle[7] = {size: 20, translation: [ 17.5,  30, 0], keep: 1};
+        card = {};
+        card[6] = {size: 20, dx: -17.5, dy: -30, keep:true};
+        card[7] = {size: 20, dx:  17.5, dy:  30, keep:true};
 
-        Paprika.bundleTags({bundle:bundle});
+        Paprika.defineCards({card:card});
 
         Paprika.bindPosition(function(data) {
             tag1Div.style.left = data.x + "px";
@@ -100,7 +100,7 @@
             bundleText.nodeValue = "\n\n\n" + data.objectName + 
                                 "(" + data.x + 
                                 "," + data.y + ")";
-        }, "bundle");
+        }, "card");
     </script>
 </body>
 </html>

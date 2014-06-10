@@ -47,15 +47,15 @@
         
         Paprika.start("videoFrame");
         
-        var bundle = {};
+        var card = {};
         // white side
-        bundle[6] = {size: 20, translation: [-17.5, -30, 0]};
-        bundle[7] = {size: 20, translation: [ 17.5,  30, 0]};
+        card[6] = {size: 20, dx: -17.5, dy: -30};
+        card[7] = {size: 20, dx:  17.5, dy:  30};
         // black side
-        bundle[8] = {size: 20, translation: [-17.5, -30, 0], rotation: [0, 180, 0]};
-        bundle[9] = {size: 20, translation: [ 17.5,  30, 0], rotation: [0, 180, 0]};
+        card[8] = {size: 20, dx: -17.5, dy: -30, back:true};
+        card[9] = {size: 20, dx:  17.5, dy:  30, back:true};
 
-        Paprika.bundleTags({bundle:bundle});
+        Paprika.defineCards({card:card});
 
         Paprika.onTilt(function(data) {
             tagText.nodeValue = data.objectName;
@@ -72,7 +72,7 @@
                         ", tilted: " + data.tilted + 
                         ", tilt: " + data.tilt + 
                         ", orientation: " + data.orientation);
-        }, "bundle", 0.1 * Math.PI);
+        }, "card", 0.1 * Math.PI);
     </script>
 </body>
 </html>
