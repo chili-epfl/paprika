@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+	<style>
+		#leftColumn {
+            float:left;
+            margin-right: 20px;
+        }
+        #rightColumn {
+            float:left;
+        }
+        #exampleFrame {
+            width: 640px;
+            height: 480px;
+            background-color: #AAAABB;
+        }
+	</style>
+</head>
+
+<body>
+        <h1>Paprika examples</h1>
+        <h2>Paprika.onStack(callback, objectName1, objectName2, radius)</h2>
+        <h3>Uses tags: tag_1, tag_2</h3>
+    
+    <div id="leftColumn">
+        <div id="videoFrame"></div>
+    </div>
+    
+    <div id="rightColumn">
+        <div id="exampleFrame"></div>
+    </div>
+
+	<script src="../js/three.min.js"></script>
+    <script src="../js/paprika.js"></script>
+	
+    <script>
+        var exampleFrame = document.getElementById("exampleFrame");
+        var tagText1 = document.createTextNode('');
+        var tagDiv1 = document.createElement("div");
+        tagDiv1.style.textAlign = "center";
+        tagDiv1.style.position = "relative";
+        tagDiv1.style.height = "20px";
+        tagDiv1.style.width = "120px";
+        tagDiv1.style.backgroundColor= "#FFFF55";
+        tagDiv1.appendChild(tagText1);
+        exampleFrame.appendChild(tagDiv1);
+        
+        var tagText2 = document.createTextNode('');
+        var tagDiv2 = document.createElement("div");
+        tagDiv2.style.textAlign = "center";
+        tagDiv2.style.position = "relative";
+        tagDiv2.style.height = "20px";
+        tagDiv2.style.width = "120px";
+        tagDiv2.style.backgroundColor= "#FFFF55";
+        tagDiv2.appendChild(tagText2);
+        exampleFrame.appendChild(tagDiv2);
+        
+        Paprika.start("videoFrame");
+        
+        Paprika.onStack(function(data) {
+            if(data.stacked) {
+                if(data.onTop == "tag_1"){
+                    tagDiv1.style.backgroundColor = "#55FF55";
+                    tagDiv2.style.display = "none";
+                } else {
+                    tagDiv2.style.backgroundColor = "#FF5555";
+                    tagDiv1.style.display = "none";
+                }
+            } else {
+                tagDiv1.style.backgroundColor = "#FFFF55";
+                tagDiv2.style.backgroundColor = "#FFFF55";
+                tagDiv1.style.display = "";
+                tagDiv2.style.display = "";
+            }
+            distance = data.distance;
+        }, "tag_1", "tag_2", 150);
+
+        Paprika.bindPosition(function(data) {
+            tagDiv1.style.left = data.x + "px";
+            tagDiv1.style.top = data.y + "px";
+            
+            tagText1.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.x + 
+                                "," + data.y + ")";
+        }, "tag_1");
+
+        Paprika.bindPosition(function(data) {
+            tagDiv2.style.left = data.x + "px";
+            tagDiv2.style.top = data.y + "px";
+            
+            tagText2.nodeValue = "\n\n\n" + data.objectName + 
+                                "(" + data.x + 
+                                "," + data.y + ")";
+        }, "tag_2");
+    </script>
+</body>
+</html>
