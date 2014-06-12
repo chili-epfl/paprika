@@ -298,6 +298,7 @@ function newSpaceship(x, y) {
     var spaceship = game.add.sprite(x, y, "spaceship");
     spaceship.animations.add("W2B", [0, 1, 2, 3, 4, 5, 6], false);
     spaceship.animations.add("B2W", [6, 5, 4, 3, 2, 1, 0], false);
+    spaceship.animations.add("startW", [0], false);
     
     game.physics.enable(spaceship, Phaser.Physics.ARCADE);
     spaceship.body.setSize(16, 16, 8, 8);
@@ -305,7 +306,7 @@ function newSpaceship(x, y) {
     spaceship.rotation = rotation;
     
     spaceship.mode = "white";
-    spaceship.animations.play("B2W");
+    spaceship.animations.play("startW");
     
     return spaceship;
 }
